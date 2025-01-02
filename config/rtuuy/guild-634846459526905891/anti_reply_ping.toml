@@ -1,0 +1,5 @@
+forbiddenUsers = [
+    865694951169589319
+]
+allowedRoles = [  ]
+mutePeriod = 900000
