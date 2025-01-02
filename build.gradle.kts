@@ -6,7 +6,7 @@ plugins {
 	alias(libs.plugins.kotlin.serialization)
 
 	alias(libs.plugins.shadow)
-	alias(libs.plugins.detekt)
+	//alias(libs.plugins.detekt)
 
 	alias(libs.plugins.kordex.docker)
 	alias(libs.plugins.kordex.plugin)
