@@ -16,7 +16,7 @@ group = "dev.upcraft"
 version = "1.0.0-SNAPSHOT"
 
 dependencies {
-	detektPlugins(libs.detekt)
+	//detektPlugins(libs.detekt)
 
 	implementation(libs.kotlin.stdlib)
 	implementation(libs.kx.ser)
