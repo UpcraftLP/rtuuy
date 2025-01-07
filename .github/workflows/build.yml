@@ -71,6 +71,8 @@ jobs:
         with:
           name: Main JAR
           path: build/libs
+      - name: List files
+        run: ls -R
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
