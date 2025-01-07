@@ -3,14 +3,19 @@
 
 FROM eclipse-temurin:21-jdk-alpine
 
-RUN mkdir -p /bot/plugins
-RUN mkdir -p /bot/data
+LABEL \
+	org.opencontainers.image.authors = "Up"
+	org.opencontainers.image.source = "https://github.com/UpcraftLP/rtuuy"
+	# FIXME add license file
+	# org.opencontainers.image.licenses = "" \
+	org.opencontainers.image.title = "Rtuuy"
+	org.opencontainers.image.description = "Discord bot for Rattiest Gang"
 
-COPY [ "build/libs/rtuuy-*-all.jar", "/bot/bot.jar" ]
+COPY [ "build/libs/rtuuy-*-all.jar", "/bot/rtuuy.jar" ]
 
 VOLUME [ "/bot/data" ]
 VOLUME [ "/bot/plugins" ]
 
 WORKDIR /bot
 
-ENTRYPOINT [ "java", "-Xms2G", "-Xmx2G", "-jar", "/bot/bot.jar" ]
+ENTRYPOINT [ "java", "-XshowSettings:vm", "-XX:MaxRAMPercentage=90", "-jar", "/bot/rtuuy.jar" ]
