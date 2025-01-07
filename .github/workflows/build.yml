@@ -65,17 +65,15 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           flavor: latest=true
-      - run: mkdir -p build/libs
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: Main JAR
           path: build/libs
-      - name: List files
-        run: ls -R
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
