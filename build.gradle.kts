@@ -1,4 +1,3 @@
-import dev.kordex.gradle.plugins.docker.file.*
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
@@ -8,9 +7,10 @@ plugins {
 	alias(libs.plugins.shadow)
 	//alias(libs.plugins.detekt)
 
-	alias(libs.plugins.kordex.docker)
 	alias(libs.plugins.kordex.plugin)
 }
+
+var javaVersion = 21
 
 group = "dev.upcraft"
 version = "1.0.0-SNAPSHOT"
@@ -55,42 +55,8 @@ detekt {
 }
 */
 
-// Automatically generate a Dockerfile. Set `generateOnBuild` to `false` if you'd prefer to manually run the
-// `createDockerfile` task instead of having it run whenever you build.
-docker {
-	// Create the Dockerfile in the root folder.
-	file(rootProject.file("Dockerfile"))
-
-	commands {
-		// Each function (aside from comment/emptyLine) corresponds to a Dockerfile instruction.
-		// See: https://docs.docker.com/reference/dockerfile/
-
-		from("eclipse-temurin:21-jdk-alpine")
-
-		emptyLine()
-
-		runShell("mkdir -p /bot/plugins")
-		runShell("mkdir -p /bot/data")
-
-		emptyLine()
-
-		copy("build/libs/$name-*-all.jar", "/bot/bot.jar")
-
-		emptyLine()
-
-		// Add volumes for locations that you need to persist. This is important!
-		volume("/bot/data")  // Storage for data files
-		volume("/bot/plugins")  // Plugin ZIP/JAR location
-
-		emptyLine()
-
-		workdir("/bot")
-
-		emptyLine()
-
-		entryPointExec(
-			"java", "-Xms2G", "-Xmx2G",
-			"-jar", "/bot/bot.jar"
-		)
+kotlin {
+	jvmToolchain {
+		languageVersion.set(JavaLanguageVersion.of(javaVersion))
 	}
 }

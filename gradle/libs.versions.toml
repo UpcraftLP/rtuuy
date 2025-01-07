@@ -30,5 +30,4 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
-kordex-docker = { id = "dev.kordex.gradle.docker", version.ref = "kordex-gradle" }
 kordex-plugin = { id = "dev.kordex.gradle.kordex", version.ref = "kordex-gradle" }
