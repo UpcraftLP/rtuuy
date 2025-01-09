@@ -19,6 +19,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class BanSyncExtension : Extension() {
@@ -236,7 +237,7 @@ class BanSyncExtension : Extension() {
 		var config = storageUnit.get()
 
 		if (config == null) {
-			config = BanSyncConfig(1L.minutes, Instant.DISTANT_PAST)
+			config = BanSyncConfig(2L.hours, Instant.DISTANT_PAST)
 
 			storageUnit.save(config)
 		}
