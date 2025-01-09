@@ -74,7 +74,7 @@ class BanSyncExtension : Extension() {
 	override suspend fun setup() {
 		if (SYNCED_BAN_SERVERS.isNotEmpty()) {
 			val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.initialSync")
-			syncedServers = SYNCED_BAN_SERVERS.split('|').map { Snowflake(it) }.toMutableList()
+			syncedServers = SYNCED_BAN_SERVERS.split(',').map { Snowflake(it) }.toMutableList()
 			logger.passed("Successfully loaded servers from SYNCED_BAN_SERVERS!")
 		}
 
