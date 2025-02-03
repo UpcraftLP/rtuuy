@@ -11,7 +11,7 @@ logging = "7.0.3"
 kordex-gradle = "1.6.0"
 kordex = "2.3.1-SNAPSHOT"
 
-shadow = "8.3.5"
+shadow = "8.3.6"
 
 [libraries]
 detekt = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
