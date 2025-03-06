@@ -44,6 +44,8 @@ kordEx {
 		classPackage = "dev.upcraft.rtuuy.i18n"
 		translationBundle = "rtuuy.strings"
 	}
+
+	module("data-mongodb")
 }
 
 // The linter is currently disabled in order to allow building, it may be re-enabled later
