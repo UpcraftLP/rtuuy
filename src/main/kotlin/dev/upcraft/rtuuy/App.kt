@@ -5,6 +5,7 @@ import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.utils.env
+import dev.kordex.modules.data.mongodb.mongoDB
 import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 
@@ -31,6 +32,8 @@ suspend fun main() {
 		intents {
 			+Intent.GuildMessages
 		}
+
+		mongoDB()
 	}
 
 	bot.start()
