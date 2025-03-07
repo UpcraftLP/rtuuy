@@ -1,0 +1,30 @@
+services:
+  discord:
+    image: ghcr.io/upcraftlp/rtuuy:latest
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    env_file:
+      - .env
+    environment:
+      ADAPTER_MONGODB_URI: mongodb://${DB_ROOT_USER}:${DB_ROOT_PASS:?no DB password set!}@mongodb:27017/?authSource=admin
+    networks:
+      - internal
+
+  mongodb:
+    image: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+    volumes:
+      - rtuuy_data:/data/db
+    networks:
+      - internal
+
+volumes:
+  rtuuy_data:
+
+networks:
+  internal:
