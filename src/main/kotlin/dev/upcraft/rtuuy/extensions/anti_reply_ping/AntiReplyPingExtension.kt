@@ -6,6 +6,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kordex.core.annotations.NotTranslated
 import dev.kordex.core.checks.failed
 import dev.kordex.core.checks.isNotBot
 import dev.kordex.core.checks.passed
@@ -35,7 +36,7 @@ import kotlin.time.Duration.Companion.minutes
 class AntiReplyPingExtension : Extension() {
 	override val name = "anti_reply_ping"
 
-	private val MENTION_REGEX = Regex("<@(\\d*)>")
+	private val mentionRegex = Regex("<@(\\d*)>")
 
 	private val storageUnit = StorageUnit<AntiReplyPingConfig>(
         StorageType.Config,
@@ -43,6 +44,7 @@ class AntiReplyPingExtension : Extension() {
         "anti_reply_ping"
     )
 
+	@OptIn(NotTranslated::class)
 	suspend fun CheckContext<MessageCreateEvent>.hasBadReplyPing() {
 		if (!passed) {
 			return
@@ -64,7 +66,7 @@ class AntiReplyPingExtension : Extension() {
 		}
 
 		val badIds = config?.forbiddenUsers
-		val candidates = MENTION_REGEX.findAll(event.message.content).map {
+		val candidates = mentionRegex.findAll(event.message.content).map {
             Snowflake(it.groupValues.last())
 		}
 
@@ -123,7 +125,7 @@ class AntiReplyPingExtension : Extension() {
 
 				action {
 					guild?.let {
-						var config = getConfig(guild!!.id)
+						val config = getConfig(guild!!.id)
 
 						if (arguments.user.id !in config.forbiddenUsers) {
 							config.forbiddenUsers.add(arguments.user.id)
@@ -156,7 +158,7 @@ class AntiReplyPingExtension : Extension() {
 
 				action {
 					guild?.let {
-						var config = getConfig(guild!!.id)
+						val config = getConfig(guild!!.id)
 
 						if (arguments.user.id in config.forbiddenUsers) {
 							config.forbiddenUsers.remove(arguments.user.id)
@@ -207,10 +209,10 @@ class AntiReplyPingExtension : Extension() {
 					}
 
 					editingPaginator {
-						for (pings in list) {
+						list.forEach { users ->
 							page {
 								title = "Non-reply-pingable users"
-								description = pings
+								description = users
 							}
 						}
 					}.send()
@@ -223,7 +225,7 @@ class AntiReplyPingExtension : Extension() {
 
 				action {
 					guild?.let {
-						var config = getConfig(guild!!.id)
+						val config = getConfig(guild!!.id)
 
 						if (arguments.role.id !in config.allowedRoles) {
 							config.allowedRoles.add(arguments.role.id)
@@ -255,7 +257,7 @@ class AntiReplyPingExtension : Extension() {
 
 				action {
 					guild?.let {
-						var config = getConfig(guild!!.id)
+						val config = getConfig(guild!!.id)
 
 						if (arguments.role.id in config.allowedRoles) {
 							config.allowedRoles.remove(arguments.role.id)
@@ -305,10 +307,10 @@ class AntiReplyPingExtension : Extension() {
 					}
 
 					editingPaginator {
-						for (pings in list) {
+						list.forEach { roles ->
 							page {
 								title = "Excluded roles"
-								description = pings
+								description = roles
 							}
 						}
 					}.send()
