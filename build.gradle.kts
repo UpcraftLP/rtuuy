@@ -64,3 +64,10 @@ kotlin {
 		languageVersion.set(JavaLanguageVersion.of(javaVersion))
 	}
 }
+
+tasks.withType<Jar> {
+	manifest {
+		attributes["Implementation-Title"] = project.name
+		attributes["Implementation-Version"] = project.version
+	}
+}
