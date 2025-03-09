@@ -10,5 +10,6 @@ data class AntiReplyPingConfig(
     var forbiddenUsers: MutableSet<@Serializable Snowflake>,
     var allowedRoles: MutableSet<@Serializable Snowflake>,
 	// This is stored in milliseconds
-    var mutePeriod: DurationInMilliseconds
+    var mutePeriod: DurationInMilliseconds,
+	var deleteOriginalMessage: Boolean
 ) : Data

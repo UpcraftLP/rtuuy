@@ -12,6 +12,7 @@ import dev.kordex.core.checks.passed
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
+import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.commands.converters.impl.optionalDuration
 import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.user
@@ -103,6 +104,10 @@ class AntiReplyPingExtension : Extension() {
 				event.member?.edit {
 					reason = "Reply-pinging an user covered by the anti-reply ping system."
 					timeoutUntil = Clock.System.now().plus(config.mutePeriod)
+				}
+
+				if (config.deleteOriginalMessage) {
+					event.message.delete("reply ping")
 				}
 			}
 		}
@@ -340,6 +345,26 @@ class AntiReplyPingExtension : Extension() {
 					}
 				}
 			}
+
+			ephemeralSubCommand(::AntiReplyPingSetDeleteOriginalMessageArgs) {
+				name = Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.name
+				description = Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.description
+
+				action {
+					val config = getConfig(guild!!.id)
+
+					arguments.delete?.let { delete ->
+						config.deleteOriginalMessage = delete
+						saveConfig(guild!!.id)
+					} ?: run {
+						respond {
+							content = (if (config.deleteOriginalMessage) Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.active else Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.inactive)
+								.withContext(this@action)
+								.translate()
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -378,6 +403,13 @@ class AntiReplyPingExtension : Extension() {
 		}
 	}
 
+	inner class AntiReplyPingSetDeleteOriginalMessageArgs : Arguments() {
+		val delete by optionalBoolean {
+			name = Translations.Arguments.AntiReplyPing.DeleteOriginalMessage.name
+			description = Translations.Arguments.AntiReplyPing.DeleteOriginalMessage.description
+		}
+	}
+
 	private suspend fun getConfig(guildId: Snowflake): AntiReplyPingConfig {
 		var config = storageUnit
 			.withGuild(guildId)
@@ -387,7 +419,8 @@ class AntiReplyPingExtension : Extension() {
 			config = AntiReplyPingConfig(
                 mutableSetOf(),
                 mutableSetOf(),
-                5L.minutes
+                5L.minutes,
+				true
             )
 
 			storageUnit
