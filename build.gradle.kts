@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
@@ -70,6 +71,14 @@ tasks.withType<Jar> {
 	manifest {
 		attributes["Implementation-Title"] = project.name
 		attributes["Implementation-Version"] = project.version
+	}
+}
+
+tasks.withType<ShadowJar> {
+	dependencies {
+		exclude(dependency("org.jetbrains:annotations:.*"))
+		exclude(dependency("com.google.errorprone:.*"))
+		exclude("META-INF/**")
 	}
 }
 
