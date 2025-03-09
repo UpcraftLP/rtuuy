@@ -36,7 +36,7 @@ kordEx {
 
 	bot {
 		// See https://docs.kordex.dev/data-collection.html
-		dataCollection(DataCollection.None)
+		dataCollection(DataCollection.Minimal)
 		//dataCollection(DataCollection.Standard)
 
 		mainClass = "dev.upcraft.rtuuy.AppKt"
