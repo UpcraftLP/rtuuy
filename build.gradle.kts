@@ -1,6 +1,7 @@
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
+	idea
 	alias(libs.plugins.kotlin.jvm)
 	alias(libs.plugins.kotlin.serialization)
 
@@ -69,5 +70,13 @@ tasks.withType<Jar> {
 	manifest {
 		attributes["Implementation-Title"] = project.name
 		attributes["Implementation-Version"] = project.version
+	}
+}
+
+// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
+idea {
+	module {
+		isDownloadSources = true
+		isDownloadJavadoc = true
 	}
 }
