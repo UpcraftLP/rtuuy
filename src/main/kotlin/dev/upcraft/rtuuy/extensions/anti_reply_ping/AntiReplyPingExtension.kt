@@ -6,10 +6,13 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.gateway.Intent
+import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kordex.core.annotations.NotTranslated
 import dev.kordex.core.checks.failed
 import dev.kordex.core.checks.isNotBot
+import dev.kordex.core.checks.memberFor
 import dev.kordex.core.checks.passed
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.commands.Arguments
@@ -24,10 +27,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.i18n.withContext
 import dev.kordex.core.storage.StorageType
 import dev.kordex.core.storage.StorageUnit
-import dev.kordex.core.utils.format
-import dev.kordex.core.utils.repliedMessageOrNull
-import dev.kordex.core.utils.timeoutUntil
-import dev.kordex.core.utils.toDuration
+import dev.kordex.core.utils.*
 import dev.upcraft.rtuuy.i18n.Translations
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock
@@ -35,16 +35,18 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toDateTimePeriod
 import kotlin.time.Duration.Companion.minutes
 
+@OptIn(PrivilegedIntent::class)
 class AntiReplyPingExtension : Extension() {
 	override val name = "anti_reply_ping"
+	override val intents: MutableSet<Intent> = mutableSetOf(Intent.GuildMessages, Intent.MessageContent)
 
 	private val mentionRegex = Regex("<@(\\d*)>")
 
 	private val storageUnit = StorageUnit<AntiReplyPingConfig>(
-        StorageType.Config,
-        "rtuuy",
-        "anti_reply_ping"
-    )
+		StorageType.Config,
+		"rtuuy",
+		"anti_reply_ping"
+	)
 
 	@OptIn(NotTranslated::class)
 	suspend fun CheckContext<MessageCreateEvent>.hasBadReplyPing() {
@@ -53,39 +55,33 @@ class AntiReplyPingExtension : Extension() {
 		}
 
 		val logger = KotlinLogging.logger("dev.upcraft.rtuuy.AntiReplyPingExtension.hasBadReplyPing")
-		val config = event.guildId?.let { getConfig(it) }
 
-		val goodRoles = config?.allowedRoles
-		val everyoneRoleId = event.getGuildOrNull()?.everyoneRole?.id
-		goodRoles?.let {
-			for (goodRole in goodRoles) {
-				if (event.member?.roleIds?.contains(goodRole) == true || everyoneRoleId == goodRole) {
-					logger.failed("User has a role in the excluded list")
-					fail("User has a role in the excluded list")
-					return
-				}
+		val guild = event.message.getGuildOrNull() ?: return fail("not in guild")
+		val config = getConfig(guild.id)
+		val everyoneRoleId = guild.everyoneRole.id
+
+		if (config.allowedRoles.contains(everyoneRoleId)) {
+			return fail("Everyone role is excluded for guild ${guild.name}")
+		}
+
+		memberFor(event)?.asMemberOrNull()?.let { member ->
+			if (member.roles.any { config.allowedRoles.contains(it.id) }) {
+				logger.failed("User has a role in the excluded list")
+				return fail("User has a role in the excluded list")
+			}
+
+			val regularMentions = mentionRegex.findAll(event.message.content).map {
+				Snowflake(it.groupValues.last())
+			}
+
+			if (event.message.mentionedUserIds.filter { it !in regularMentions }.any { it in config.forbiddenUsers }) {
+				logger.passed()
+				return pass()
 			}
 		}
 
-		val badIds = config?.forbiddenUsers
-		val candidates = mentionRegex.findAll(event.message.content).map {
-            Snowflake(it.groupValues.last())
-		}
-
-		badIds?.let {
-			for (badId in badIds) {
-				if (badId in event.message.mentionedUserIds) {
-					if (badId !in candidates) {
-						logger.passed()
-						pass()
-						return
-					}
-				}
-			}
-		}
-
-		logger.failed("No bad reply pings were detected")
-		fail("No bad reply pings were detected")
+		// catch-all
+		return fail()
 	}
 
 	override suspend fun setup() {
@@ -97,26 +93,29 @@ class AntiReplyPingExtension : Extension() {
 
 			action {
 				val config = getConfig(event.message.getGuild().id)
-				event.message.reply {
-					content = Translations.Moderation.AntiReplyPing.timeOut
-						.withContext(this@action)
-						.translateNamed(
-							"user" to event.member?.mention,
-							"pinged_user" to event.message.repliedMessageOrNull()?.author?.mention
-						)
-
-					allowedMentions {
-						users.add(event.member!!.id)
-					}
-				}
-
-				event.member?.edit {
-					reason = "Reply-pinging an user covered by the anti-reply ping system."
-					timeoutUntil = Clock.System.now().plus(config.mutePeriod)
-				}
 
 				if (config.deleteOriginalMessage) {
 					event.message.delete("reply ping")
+				}
+
+				memberFor(event)?.asMemberOrNull()?.let { member ->
+					event.message.reply {
+						content = Translations.Moderation.AntiReplyPing.timeOut
+							.withContext(this@action)
+							.translateNamed(
+								"user" to member.mention,
+								"pinged_user" to event.message.repliedMessageOrNull()?.author?.mention,
+							)
+
+						allowedMentions {
+							users.add(member.id)
+						}
+					}
+
+					member.edit {
+						reason = "Reply-pinging an user covered by the anti-reply ping system."
+						timeoutUntil = Clock.System.now().plus(config.mutePeriod)
+					}
 				}
 			}
 		}
@@ -164,13 +163,13 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.Remove.description
 
 				action {
-					guild?.let {
-						val config = getConfig(guild!!.id)
+					guild?.let { guild ->
+						val config = getConfig(guild.id)
 
 						if (arguments.user.id in config.forbiddenUsers) {
 							config.forbiddenUsers.remove(arguments.user.id)
 
-							saveConfig(guild!!.id)
+							saveConfig(guild.id)
 
 							respond {
 								content = Translations.Commands.AntiReplyPing.Remove.Response.success
@@ -197,32 +196,34 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.List.description
 
 				action {
-					val config = getConfig(guild!!.id)
-					val pings = config.forbiddenUsers.map { "<@$it>" }
-					val list = buildList<String> {
-						if (pings.isNotEmpty()) {
-							var i = 0
-							while (i < pings.count()) {
-								add(pings.take(15).joinToString("\n"))
-								i++
+					guild?.let { guild ->
+						val config = getConfig(guild.id)
+						val pings = config.forbiddenUsers.map { userId -> "<@${userId}>" }
+						val list = buildList<String> {
+							if (pings.isNotEmpty()) {
+								var i = 0
+								while (i < pings.count()) {
+									add(pings.take(15).joinToString("\n"))
+									i++
+								}
+							} else {
+								add(
+									Translations.Commands.AntiReplyPing.List.placeholder
+										.withContext(this@action)
+										.translate()
+								)
 							}
-						} else {
-							add(
-                                Translations.Commands.AntiReplyPing.List.placeholder
-								.withContext(this@action)
-								.translate()
-							)
 						}
-					}
 
-					editingPaginator {
-						list.forEach { users ->
-							page {
-								title = "Non-reply-pingable users"
-								description = users
+						editingPaginator {
+							list.forEach { users ->
+								page {
+									title = "Non-reply-pingable users"
+									description = users
+								}
 							}
-						}
-					}.send()
+						}.send()
+					}
 				}
 			}
 
@@ -231,12 +232,12 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.Exclude.description
 
 				action {
-					guild?.let {
-						val config = getConfig(guild!!.id)
+					guild?.let { guild ->
+						val config = getConfig(guild.id)
 
 						if (arguments.role.id !in config.allowedRoles) {
 							config.allowedRoles.add(arguments.role.id)
-							saveConfig(guild!!.id)
+							saveConfig(guild.id)
 
 							respond {
 								content = Translations.Commands.AntiReplyPing.Exclude.Response.success
@@ -263,12 +264,12 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.Include.description
 
 				action {
-					guild?.let {
-						val config = getConfig(guild!!.id)
+					guild?.let { guild ->
+						val config = getConfig(guild.id)
 
 						if (arguments.role.id in config.allowedRoles) {
 							config.allowedRoles.remove(arguments.role.id)
-							saveConfig(guild!!.id)
+							saveConfig(guild.id)
 
 							respond {
 								content = Translations.Commands.AntiReplyPing.Include.Response.success
@@ -306,9 +307,9 @@ class AntiReplyPingExtension : Extension() {
 							}
 						} else {
 							add(
-                                Translations.Commands.AntiReplyPing.RoleList.placeholder
-								.withContext(this@action)
-								.translate()
+								Translations.Commands.AntiReplyPing.RoleList.placeholder
+									.withContext(this@action)
+									.translate()
 							)
 						}
 					}
@@ -329,27 +330,29 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.SetTimeoutDuration.description
 
 				action {
-					arguments.duration?.let { duration ->
-						val config = getConfig(guild!!.id)
-						config.mutePeriod = duration.toDuration(TimeZone.Companion.UTC)
-						saveConfig(guild!!.id)
+					guild?.let { guild ->
+						arguments.duration?.let { duration ->
+							val config = getConfig(guild.id)
+							config.mutePeriod = duration.toDuration(TimeZone.Companion.UTC)
+							saveConfig(guild.id)
 
-						respond {
-							content = Translations.Commands.AntiReplyPing.SetTimeoutDuration.Response.success
-								.withContext(this@action)
-								.translateNamed(
-									"duration" to duration.format(getLocale())
-								)
-						}
-					} ?: run {
-						respond {
-							val config = getConfig(guild!!.id)
-							content = Translations.Commands.AntiReplyPing.SetTimeoutDuration.Response.noDuration
-								.withContext(this@action)
-								.translateNamed(
-									// This could be simplified to duration.format(getLocale), but let's not risk it yet
-									"duration" to config.mutePeriod.toDateTimePeriod().format(getLocale())
-								)
+							respond {
+								content = Translations.Commands.AntiReplyPing.SetTimeoutDuration.Response.success
+									.withContext(this@action)
+									.translateNamed(
+										"duration" to duration.format(getLocale())
+									)
+							}
+						} ?: run {
+							respond {
+								val config = getConfig(guild.id)
+								content = Translations.Commands.AntiReplyPing.SetTimeoutDuration.Response.noDuration
+									.withContext(this@action)
+									.translateNamed(
+										// This could be simplified to duration.format(getLocale), but let's not risk it yet
+										"duration" to config.mutePeriod.toDateTimePeriod().format(getLocale())
+									)
+							}
 						}
 					}
 				}
@@ -360,16 +363,27 @@ class AntiReplyPingExtension : Extension() {
 				description = Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.description
 
 				action {
-					val config = getConfig(guild!!.id)
+					guild?.let { guild ->
+						val config = getConfig(guild.id)
 
-					arguments.delete?.let { delete ->
-						config.deleteOriginalMessage = delete
-						saveConfig(guild!!.id)
-					} ?: run {
-						respond {
-							content = (if (config.deleteOriginalMessage) Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.active else Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.inactive)
-								.withContext(this@action)
-								.translate()
+						arguments.delete?.let { delete ->
+							config.deleteOriginalMessage = delete
+							saveConfig(guild.id)
+						} ?: run {
+							if(config.deleteOriginalMessage) {
+								respond {
+									content = Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.active
+										.withContext(this@action)
+										.translate()
+								}
+							}
+							else {
+								respond {
+									content = Translations.Commands.AntiReplyPing.SetDeleteOriginalMessage.Response.inactive
+										.withContext(this@action)
+										.translate()
+								}
+							}
 						}
 					}
 				}
@@ -426,11 +440,11 @@ class AntiReplyPingExtension : Extension() {
 
 		if (config == null) {
 			config = AntiReplyPingConfig(
-                mutableSetOf(),
-                mutableSetOf(),
-                5L.minutes,
+				mutableSetOf(),
+				mutableSetOf(),
+				5L.minutes,
 				true
-            )
+			)
 
 			storageUnit
 				.withGuild(guildId)

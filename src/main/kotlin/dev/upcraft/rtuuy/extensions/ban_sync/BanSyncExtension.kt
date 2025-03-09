@@ -5,6 +5,8 @@ import dev.kord.core.behavior.ban
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
+import dev.kord.gateway.Intent
+import dev.kordex.core.annotations.NotTranslated
 import dev.kordex.core.checks.failed
 import dev.kordex.core.checks.guildFor
 import dev.kordex.core.checks.passed
@@ -15,18 +17,19 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.storage.StorageType
 import dev.kordex.core.storage.StorageUnit
 import dev.kordex.core.utils.env
+import dev.kordex.core.utils.envOf
 import dev.kordex.core.utils.scheduling.Scheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 class BanSyncExtension : Extension() {
 	override val name = "ban_sync"
+	override val intents: MutableSet<Intent> = mutableSetOf(Intent.GuildModeration)
 
-	private val SYNCED_BAN_SERVERS = env("SYNCED_BAN_SERVERS")
-	private val DRY_RUN = env("DRY_RUN")
+	private val syncedServerIds = env("SYNCED_BAN_SERVERS")
+	private val isDryRun = envOf<Boolean>("DRY_RUN")
 	private var syncedServers = mutableListOf<Snowflake>()
 	private var syncingBans = mutableListOf<Snowflake>()
 	private val scheduler = Scheduler()
@@ -37,7 +40,8 @@ class BanSyncExtension : Extension() {
 		"ban_sync"
 	)
 
-	suspend fun <T : Event> CheckContext<T>.isSyncedGuild() {
+	@OptIn(NotTranslated::class)
+	private suspend fun <T : Event> CheckContext<T>.isSyncedGuild() {
 		if (!passed) {
 			return
 		}
@@ -54,7 +58,8 @@ class BanSyncExtension : Extension() {
 		fail("Guild is not in the list of guilds with synced bans!")
 	}
 
-	suspend fun <T : Event> CheckContext<T>.isNotSyncing() {
+	@OptIn(NotTranslated::class)
+	private suspend fun <T : Event> CheckContext<T>.isNotSyncing() {
 		if (!passed) {
 			return
 		}
@@ -72,13 +77,13 @@ class BanSyncExtension : Extension() {
 	}
 
 	override suspend fun setup() {
-		if (SYNCED_BAN_SERVERS.isNotEmpty()) {
+		if (syncedServerIds.isNotEmpty()) {
 			val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.initialSync")
-			syncedServers = SYNCED_BAN_SERVERS.split(',').map { Snowflake(it) }.toMutableList()
+			syncedServers = syncedServerIds.split(',').map { Snowflake(it) }.toMutableList()
 			logger.passed("Successfully loaded servers from SYNCED_BAN_SERVERS!")
 		}
 
-		if (DRY_RUN.lowercase() == "true") {
+		if (isDryRun) {
 			val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.dryRunEnabled")
 			logger.passed("Dry run has been enabled. All bans to be synced will not be applied!")
 		}
@@ -182,12 +187,12 @@ class BanSyncExtension : Extension() {
 				} else {
 					guild.bans.collect {
 						if (!guildToBan.containsKey(it.userId)) {
-							guildToBan.put(it.userId, mutableMapOf<Snowflake, String?>(guild.id to it.reason))
+							guildToBan[it.userId] = mutableMapOf(guild.id to it.reason)
 						} else {
 							val existingMap = guildToBan[it.userId]
 							if (existingMap != null) {
-								existingMap.put(guild.id, it.reason)
-								guildToBan.put(it.userId, existingMap)
+								existingMap[guild.id] = it.reason
+								guildToBan[it.userId] = existingMap
 							}
 						}
 					}
@@ -205,7 +210,7 @@ class BanSyncExtension : Extension() {
 						syncingBans.add(entry.key)
 						val guildName = kord.getGuildOrNull(guild.id)?.name ?: "[Guild Unknown]"
 						if (entry.value.containsKey(guild.id)) {
-							if (DRY_RUN.lowercase() == "true") {
+							if (isDryRun) {
 								logger.info { "Dry-Run: Ignoring redundant ban for ${entry.key} on $guildName (${guild.id})" }
 							}
 						} else {
@@ -213,7 +218,7 @@ class BanSyncExtension : Extension() {
 							val newReason = entry.value.map {
 								"${it.value} (${bot.kordRef.getGuildOrNull(it.key)?.name ?: it.key})"
 							}.joinToString(", ")
-							if (DRY_RUN.lowercase() == "true") {
+							if (isDryRun) {
 								logger.info { "Dry-Run on $guildName (${guild.id})): Banned $username (${entry.key}) for: $newReason" }
 							} else {
 								logger.info { "$guildName (${guild.id})): Banned $username (${entry.key}) for: $newReason" }
