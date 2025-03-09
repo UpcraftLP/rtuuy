@@ -316,7 +316,7 @@ class AntiReplyPingExtension : Extension() {
 
 				action {
 					arguments.duration?.let { duration ->
-						var config = getConfig(guild!!.id)
+						val config = getConfig(guild!!.id)
 						config.mutePeriod = duration.toDuration(TimeZone.Companion.UTC)
 						saveConfig(guild!!.id)
 
@@ -327,11 +327,9 @@ class AntiReplyPingExtension : Extension() {
 									"duration" to duration.format(getLocale())
 								)
 						}
-					}
-
-					if (arguments.duration == null) {
+					} ?: run {
 						respond {
-							var config = getConfig(guild!!.id)
+							val config = getConfig(guild!!.id)
 							content = Translations.Commands.AntiReplyPing.SetTimeoutDuration.Response.noDuration
 								.withContext(this@action)
 								.translateNamed(
