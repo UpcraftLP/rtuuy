@@ -6,6 +6,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.rest.builder.message.allowedMentions
 import dev.kordex.core.annotations.NotTranslated
 import dev.kordex.core.checks.failed
 import dev.kordex.core.checks.isNotBot
@@ -24,6 +25,7 @@ import dev.kordex.core.i18n.withContext
 import dev.kordex.core.storage.StorageType
 import dev.kordex.core.storage.StorageUnit
 import dev.kordex.core.utils.format
+import dev.kordex.core.utils.repliedMessageOrNull
 import dev.kordex.core.utils.timeoutUntil
 import dev.kordex.core.utils.toDuration
 import dev.upcraft.rtuuy.i18n.Translations
@@ -99,8 +101,13 @@ class AntiReplyPingExtension : Extension() {
 					content = Translations.Moderation.AntiReplyPing.timeOut
 						.withContext(this@action)
 						.translateNamed(
-							"user" to event.member?.mention
+							"user" to event.member?.mention,
+							"pinged_user" to event.message.repliedMessageOrNull()?.author?.mention
 						)
+
+					allowedMentions {
+						users.add(event.member!!.id)
+					}
 				}
 
 				event.member?.edit {
