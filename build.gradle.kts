@@ -15,7 +15,7 @@ plugins {
 var javaVersion = 21
 
 group = "dev.upcraft"
-version = System.getenv("VERSION") ?: "1.0.0-SNAPSHOT"
+version = System.getenv("VERSION") ?: System.getenv("COMMIT_SHA_SHORT") ?: "1.0.0-SNAPSHOT"
 
 println("Building ${project.name} version ${project.version}")
 
