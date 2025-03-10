@@ -3,6 +3,7 @@ package dev.upcraft.rtuuy.extensions.system_notifications
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Webhook
 import dev.kord.core.event.gateway.ReadyEvent
+import dev.kord.rest.builder.message.embed
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.envOfOrNull
@@ -64,12 +65,20 @@ class SystemNotificationExtension : Extension() {
 
 			discordWebhooks.forEach { webhook ->
 				webhook.executeStored {
-					content = Translations.SystemNotifications.StartupWebhook.message
-						.translateNamed(
-							"version" to App.VERSION,
-							"bot_username" to botUsername,
-							"application_id" to applicationId,
-						)
+					embed {
+						title = Translations.SystemNotifications.StartupWebhook.title
+							.translateNamed(
+								"version" to App.VERSION,
+								"bot_username" to botUsername,
+								"application_id" to applicationId,
+							)
+						description = Translations.SystemNotifications.StartupWebhook.message
+							.translateNamed(
+								"version" to App.VERSION,
+								"bot_username" to botUsername,
+								"application_id" to applicationId,
+							)
+					}
 				}
 			}
 
