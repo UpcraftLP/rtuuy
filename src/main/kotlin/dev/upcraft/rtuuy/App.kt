@@ -16,7 +16,13 @@ val TEST_SERVER_ID = envOfOrNull<Snowflake>("TEST_SERVER")
 private val TOKEN = env("TOKEN")
 
 object App {
-	val VERSION: String = javaClass.`package`.implementationVersion ?: "UNKNOWN"
+	const val REPOSITORY_URL = "https://github.com/upcraftlp/rtuuy"
+
+	val VERSION: String = javaClass.`package`.specificationVersion ?: "UNKNOWN"
+	val COMMIT_SHA: String? = javaClass.`package`.implementationVersion
+	val COMMIT_URL: String = COMMIT_SHA?.let { "$REPOSITORY_URL/commit/$it" } ?: REPOSITORY_URL
+
+	const val AUTHOR = "Up"
 }
 
 suspend fun main() {

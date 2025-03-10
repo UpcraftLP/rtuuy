@@ -1,6 +1,7 @@
 package dev.upcraft.rtuuy.util.ntfy
 
 import kotlinx.serialization.Serializable
+import java.net.URI
 import java.net.URL
 import kotlin.time.Duration
 
@@ -44,7 +45,7 @@ class NtfyMessageBuilder {
 	var icon: URL? = null
 	var attach: URL? = null
 	var filename: String? = null
-	var click: URL? = null
+	var click: URI? = null
 	var email: String? = null
 	var call: String? = null
 

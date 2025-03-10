@@ -15,6 +15,7 @@ import dev.upcraft.rtuuy.util.ntfy.NtfyTags
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import java.net.URI
 
 class SystemNotificationExtension : Extension() {
 	override val name = "system_notifications"
@@ -64,21 +65,28 @@ class SystemNotificationExtension : Extension() {
 				val applicationId = kord.getApplicationInfo().id
 				val botUsername = kord.getSelf().username
 
+				val replacements = mapOf(
+					"version" to App.VERSION,
+					"author" to App.AUTHOR,
+					"repository_url" to App.REPOSITORY_URL,
+					"commit_url" to App.COMMIT_URL,
+					"commit_sha" to App.COMMIT_SHA,
+					"bot_username" to botUsername,
+					"application_id" to applicationId,
+				)
+
 				discordWebhooks.forEach { webhook ->
 					webhook.executeStored {
 						embed {
 							title = Translations.SystemNotifications.StartupWebhook.title
-								.translateNamed(
-									"version" to App.VERSION,
-									"bot_username" to botUsername,
-									"application_id" to applicationId,
-								)
+								.translateNamed(replacements)
 							description = Translations.SystemNotifications.StartupWebhook.message
-								.translateNamed(
-									"version" to App.VERSION,
-									"bot_username" to botUsername,
-									"application_id" to applicationId,
-								)
+								.translateNamed(replacements)
+
+							footer {
+								text = Translations.Notifications.Footer.poweredBy
+									.translateNamed(replacements)
+							}
 						}
 					}
 				}
@@ -92,6 +100,7 @@ class SystemNotificationExtension : Extension() {
 								"bot_username" to botUsername,
 								"application_id" to applicationId
 							)
+						click = URI.create(App.COMMIT_URL)
 					}
 				}
 			}
