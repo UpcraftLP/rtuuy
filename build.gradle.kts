@@ -24,6 +24,9 @@ dependencies {
 
 	implementation(libs.kotlin.stdlib)
 	implementation(libs.kx.ser)
+	implementation(libs.kx.ser.json)
+
+	implementation(libs.bundles.ktor.client)
 
 	// Logging dependencies
 	implementation(libs.groovy)

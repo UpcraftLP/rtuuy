@@ -16,7 +16,7 @@ val TEST_SERVER_ID = envOfOrNull<Snowflake>("TEST_SERVER")
 private val TOKEN = env("TOKEN")
 
 object App {
-	val VERSION: String = javaClass.`package`.implementationVersion ?: "unknown"
+	val VERSION: String = javaClass.`package`.implementationVersion ?: "UNKNOWN"
 }
 
 suspend fun main() {

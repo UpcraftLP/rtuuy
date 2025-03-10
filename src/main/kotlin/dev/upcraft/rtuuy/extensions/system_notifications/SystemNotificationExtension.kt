@@ -6,7 +6,6 @@ import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
-import dev.kordex.core.utils.envOfOrNull
 import dev.kordex.core.utils.envOrNull
 import dev.kordex.core.utils.executeStored
 import dev.upcraft.rtuuy.App
@@ -15,7 +14,7 @@ import dev.upcraft.rtuuy.util.ntfy.NtfyClient
 import dev.upcraft.rtuuy.util.ntfy.NtfyTags
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
-import java.net.URL
+import io.ktor.serialization.kotlinx.json.*
 
 class SystemNotificationExtension : Extension() {
 	override val name = "system_notifications"
@@ -28,11 +27,12 @@ class SystemNotificationExtension : Extension() {
 		NtfyClient {
 			client = HttpClient {
 				install(ContentNegotiation) {
+					json()
 				}
 			}
 			accessToken = envOrNull("SYSTEM_NOTIFICATION_NTFY_TOKEN")
 			// custom URL if provided, public service otherwise
-			server = envOfOrNull<URL>("SYSTEM_NOTIFICATION_NTFY_URL")
+			server = envOrNull("SYSTEM_NOTIFICATION_NTFY_SERVER")
 		}
 	}
 
@@ -53,44 +53,46 @@ class SystemNotificationExtension : Extension() {
 			}
 		}
 
-		var seen = false
 		event<ReadyEvent> {
-			if (seen) {
-				return@event
-			}
-			seen = true
+			var seen = false
+			action {
+				if (seen) {
+					return@action
+				}
+				seen = true
 
-			val applicationId = kord.getApplicationInfo().id
-			val botUsername = kord.getSelf().username
+				val applicationId = kord.getApplicationInfo().id
+				val botUsername = kord.getSelf().username
 
-			discordWebhooks.forEach { webhook ->
-				webhook.executeStored {
-					embed {
-						title = Translations.SystemNotifications.StartupWebhook.title
-							.translateNamed(
-								"version" to App.VERSION,
-								"bot_username" to botUsername,
-								"application_id" to applicationId,
-							)
-						description = Translations.SystemNotifications.StartupWebhook.message
-							.translateNamed(
-								"version" to App.VERSION,
-								"bot_username" to botUsername,
-								"application_id" to applicationId,
-							)
+				discordWebhooks.forEach { webhook ->
+					webhook.executeStored {
+						embed {
+							title = Translations.SystemNotifications.StartupWebhook.title
+								.translateNamed(
+									"version" to App.VERSION,
+									"bot_username" to botUsername,
+									"application_id" to applicationId,
+								)
+							description = Translations.SystemNotifications.StartupWebhook.message
+								.translateNamed(
+									"version" to App.VERSION,
+									"bot_username" to botUsername,
+									"application_id" to applicationId,
+								)
+						}
 					}
 				}
-			}
 
-			ntfyClient?.let { ntfy ->
-				ntfy.publish(ntfyTopic!!) {
-					tags.add(NtfyTags.Robot)
-					message = Translations.SystemNotifications.StartupNtfy.message
-						.translateNamed(
-							"version" to App.VERSION,
-							"bot_username" to botUsername,
-							"application_id" to applicationId
-						)
+				ntfyClient?.let { ntfy ->
+					ntfy.publish(ntfyTopic!!) {
+						tags.add(NtfyTags.Robot)
+						message = Translations.SystemNotifications.StartupNtfy.message
+							.translateNamed(
+								"version" to App.VERSION,
+								"bot_username" to botUsername,
+								"application_id" to applicationId
+							)
+					}
 				}
 			}
 		}

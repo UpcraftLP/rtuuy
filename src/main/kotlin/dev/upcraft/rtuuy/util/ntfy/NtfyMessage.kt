@@ -1,5 +1,6 @@
 package dev.upcraft.rtuuy.util.ntfy
 
+import kotlinx.serialization.Serializable
 import java.net.URL
 import kotlin.time.Duration
 
@@ -8,6 +9,7 @@ import kotlin.time.Duration
  *
  * Note that [Action Buttons](https://docs.ntfy.sh/publish/#action-buttons) are currently not supported
  */
+@Serializable
 data class NtfyMessage(
 	val topic: String,
 
@@ -20,30 +22,31 @@ data class NtfyMessage(
 	val message: String?,
 	val markdown: Boolean?,
 
-	val icon: URL?,
+	val icon: String?,
 
-	val attach: URL?,
+	val attach: String?,
 	val filename: String?,
 
-	val click: URL?,
+	val click: String?,
 	val email: String?,
 	val call: String?
 )
 
+@Suppress("MemberVisibilityCanBePrivate")
 class NtfyMessageBuilder {
 
-	public var tags: MutableSet<String> = mutableSetOf()
-	public var priority: Int? = null
-	public var delay: Duration? = null
-	public var title: String? = null
-	public var message: String? = null
-	public var markdown: Boolean? = null
-	public var icon: URL? = null
-	public var attach: URL? = null
-	public var filename: String? = null
-	public var click: URL? = null
-	public var email: String? = null
-	public var call: String? = null
+	var tags: MutableSet<String> = mutableSetOf()
+	var priority: Int? = null
+	var delay: Duration? = null
+	var title: String? = null
+	var message: String? = null
+	var markdown: Boolean? = null
+	var icon: URL? = null
+	var attach: URL? = null
+	var filename: String? = null
+	var click: URL? = null
+	var email: String? = null
+	var call: String? = null
 
 	fun toMessage(topic: String): NtfyMessage = NtfyMessage(
 		topic,
@@ -53,10 +56,10 @@ class NtfyMessageBuilder {
 		title = title,
 		message = message,
 		markdown = markdown,
-		icon = icon,
-		attach = attach,
+		icon = icon?.toString(),
+		attach = attach?.toString(),
 		filename = filename,
-		click = click,
+		click = click?.toString(),
 		email = email,
 		call = call
 	)
