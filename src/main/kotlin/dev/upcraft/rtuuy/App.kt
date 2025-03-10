@@ -7,12 +7,17 @@ import dev.kordex.core.utils.envOfOrNull
 import dev.kordex.modules.data.mongodb.mongoDB
 import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
+import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
 
 // Get the test server ID from the env vars or a .env file
 val TEST_SERVER_ID = envOfOrNull<Snowflake>("TEST_SERVER")
 
 // Get the bot's token from the env vars or a .env file
 private val TOKEN = env("TOKEN")
+
+object App {
+	val VERSION: String = javaClass.`package`.implementationVersion ?: "unknown"
+}
 
 suspend fun main() {
 	val bot = ExtensibleBot(TOKEN) {
@@ -21,6 +26,7 @@ suspend fun main() {
 		}
 
 		extensions {
+			add(::SystemNotificationExtension)
 			add(::AntiReplyPingExtension)
 			add(::BanSyncExtension)
 		}
