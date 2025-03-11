@@ -83,7 +83,7 @@ class SystemNotificationExtension : Extension() {
 
 				ntfyClient?.let { ntfy ->
 					ntfy.publish(ntfyTopic!!) {
-						tags.add(NtfyTags.Robot)
+						tags.add(NtfyTags.ROBOT)
 						message = Translations.SystemNotifications.StartupNtfy.message
 							.translateNamed(replacements)
 						click = URI.create(App.COMMIT_URL)
