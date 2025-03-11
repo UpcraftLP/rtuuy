@@ -53,7 +53,7 @@ suspend fun getAppInfo(kord: Kord): MutableMap<String, Any?> {
 	map["repository_url"] = App.REPOSITORY_URL
 	map["commit_url"] = App.COMMIT_URL
 	map["commit_sha"] = App.COMMIT_SHA
-	map["bot_username"] = kord.getApplicationInfo().id
-	map["application_id"] = kord.getSelf().username
+	map["bot_username"] = kord.getSelf().username
+	map["application_id"] = kord.getApplicationInfo().id
 	return map
 }
