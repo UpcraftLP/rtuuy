@@ -2,20 +2,18 @@ package dev.upcraft.rtuuy.util.ntfy
 
 import io.ktor.client.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.net.URI
-import java.net.URL
 
-class NtfyClient(private val client: HttpClient,
-				 /**
-				  * the custom NTFY server URL
-				  */
-				 private val serverUrl: String,
-				 /**
-				  * For security reasons we only support [access tokens](https://docs.ntfy.sh/publish/#access-tokens)
-				  */
-				 private val accessToken: String?
+class NtfyClient(
+	private val client: HttpClient,
+	/**
+	 * the custom NTFY server URL
+	 */
+	private val serverUrl: String,
+	/**
+	 * For security reasons we only support [access tokens](https://docs.ntfy.sh/publish/#access-tokens)
+	 */
+	private val accessToken: String?
 ) {
 	companion object {
 		const val DEFAULT_URL = "https://ntfy.sh"
@@ -32,7 +30,7 @@ class NtfyClient(private val client: HttpClient,
 	}
 }
 
-public fun NtfyClient(builder: NtfyClientBuilder.() -> Unit): NtfyClient {
+fun NtfyClient(builder: NtfyClientBuilder.() -> Unit): NtfyClient {
 	return NtfyClientBuilder().apply(builder).build()
 }
 
