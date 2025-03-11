@@ -9,6 +9,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.envOrNull
 import dev.kordex.core.utils.executeStored
 import dev.upcraft.rtuuy.App
+import dev.upcraft.rtuuy.getAppInfo
 import dev.upcraft.rtuuy.i18n.Translations
 import dev.upcraft.rtuuy.util.ntfy.NtfyClient
 import dev.upcraft.rtuuy.util.ntfy.NtfyTags
@@ -62,18 +63,7 @@ class SystemNotificationExtension : Extension() {
 				}
 				seen = true
 
-				val applicationId = kord.getApplicationInfo().id
-				val botUsername = kord.getSelf().username
-
-				val replacements = mapOf(
-					"version" to App.VERSION,
-					"author" to App.AUTHOR,
-					"repository_url" to App.REPOSITORY_URL,
-					"commit_url" to App.COMMIT_URL,
-					"commit_sha" to App.COMMIT_SHA,
-					"bot_username" to botUsername,
-					"application_id" to applicationId,
-				)
+				val replacements = getAppInfo(kord)
 
 				discordWebhooks.forEach { webhook ->
 					webhook.executeStored {
@@ -95,11 +85,7 @@ class SystemNotificationExtension : Extension() {
 					ntfy.publish(ntfyTopic!!) {
 						tags.add(NtfyTags.Robot)
 						message = Translations.SystemNotifications.StartupNtfy.message
-							.translateNamed(
-								"version" to App.VERSION,
-								"bot_username" to botUsername,
-								"application_id" to applicationId
-							)
+							.translateNamed(replacements)
 						click = URI.create(App.COMMIT_URL)
 					}
 				}
