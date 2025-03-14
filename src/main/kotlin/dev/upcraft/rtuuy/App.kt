@@ -30,6 +30,8 @@ object App {
 
 suspend fun main() {
 	val bot = ExtensibleBot(TOKEN) {
+		botVersion = App.COMMIT_SHA ?: App.VERSION
+
 		applicationCommands {
 			defaultGuild(TEST_SERVER_ID)
 		}
