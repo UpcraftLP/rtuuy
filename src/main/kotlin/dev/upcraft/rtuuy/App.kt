@@ -6,7 +6,9 @@ import dev.kord.rest.builder.message.embed
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.utils.env
 import dev.kordex.core.utils.envOfOrNull
+import dev.kordex.core.utils.envOrNull
 import dev.kordex.modules.data.mongodb.mongoDB
+import dev.kordex.modules.web.core.backend.utils.web
 import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
@@ -37,6 +39,11 @@ suspend fun main() {
 		}
 
 		extensions {
+			web {
+				hostname = envOrNull("FRONTEND_URL")
+				port = envOfOrNull<Int>("PORT") ?: 3000
+			}
+
 			add(::AntiReplyPingExtension)
 			add(::BanSyncExtension)
 			add(::SystemNotificationExtension)

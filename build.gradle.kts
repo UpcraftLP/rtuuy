@@ -53,6 +53,7 @@ kordEx {
 	}
 
 	module("data-mongodb")
+	module("web-backend")
 }
 
 // The linter is currently disabled in order to allow building, it may be re-enabled later
