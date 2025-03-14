@@ -13,7 +13,9 @@ import dev.kordex.core.checks.passed
 import dev.kordex.core.checks.types.CheckContext
 import dev.kordex.core.checks.userFor
 import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ExtensionState
 import dev.kordex.core.extensions.event
+import dev.kordex.core.healthcheck.utils.addHealthCheck
 import dev.kordex.core.storage.StorageType
 import dev.kordex.core.storage.StorageUnit
 import dev.kordex.core.utils.env
@@ -23,6 +25,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 class BanSyncExtension : Extension() {
 	override val name = "ban_sync"
@@ -32,6 +35,8 @@ class BanSyncExtension : Extension() {
 	private val isDryRun = envOf<Boolean>("DRY_RUN")
 	private var syncedServers = mutableListOf<Snowflake>()
 	private var syncingBans = mutableListOf<Snowflake>()
+	private var hasStartedInitialSync = false
+	private var isSyncing = false
 	private val scheduler = Scheduler()
 
 	private val storageUnit = StorageUnit<BanSyncConfig>(
@@ -77,6 +82,19 @@ class BanSyncExtension : Extension() {
 	}
 
 	override suspend fun setup() {
+		addHealthCheck("ban_sync") {
+			healthyIf {
+				this@BanSyncExtension.state == ExtensionState.LOADED
+			}
+
+			unhealthyIf("missed last sync interval") {
+				val config = getConfig()
+
+				syncedServers.isNotEmpty() && hasStartedInitialSync && !isSyncing
+					&& config.lastSynced + config.syncInterval < Clock.System.now() - 2.seconds
+			}
+		}
+
 		if (syncedServerIds.isNotEmpty()) {
 			val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.initialSync")
 			syncedServers = syncedServerIds.split(',').map { Snowflake(it) }.toMutableList()
@@ -90,7 +108,10 @@ class BanSyncExtension : Extension() {
 
 		val syncInterval = getConfig().syncInterval
 
-		scheduler.schedule(syncInterval, true, "Ban Sync", 1, true) {
+		scheduler.schedule(syncInterval, true, "Ban Sync", 10, true) {
+			syncBans()
+		}
+		scheduler.schedule(5.seconds, true, "Initial Ban Sync", 1, false) {
 			syncBans()
 		}
 
@@ -170,6 +191,12 @@ class BanSyncExtension : Extension() {
 	}
 
 	private suspend fun syncBans() {
+		if (isSyncing) {
+			return
+		}
+		hasStartedInitialSync = true
+		isSyncing = true
+
 		val config = getConfig()
 		val now = Clock.System.now()
 		val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.syncBans")
@@ -236,6 +263,7 @@ class BanSyncExtension : Extension() {
 			config.lastSynced = now
 			saveConfig()
 		}
+		isSyncing = false
 	}
 
 	private suspend fun getConfig(): BanSyncConfig {
