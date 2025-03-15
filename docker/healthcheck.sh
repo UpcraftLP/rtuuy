@@ -1,11 +1,8 @@
 #!/bin/sh
 
-status=$(wget --quiet -O - --user-agent="rtuuy_healthcheck" http://localhost:3000/api/health | grep -o '"status":\s*"[^"]*"' | awk -F: '{print $2}' | tr -d '"')
+status=$(curl --silent --show-error http://localhost:3000/api/health | jq --raw-output '.status')
 
-if [ "$status" = "healthy" ]; then
-		echo "OK"
-    exit 0
-else
-    echo "status: $status"
-    exit 1
-fi
+echo "status: $status"
+
+# return 0 if healthy, 1 otherwise
+[ "$status" = "healthy" ] && exit 0 || exit 1

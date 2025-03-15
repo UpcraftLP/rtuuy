@@ -4,6 +4,11 @@
 ARG JAVA_VERSION=21
 FROM eclipse-temurin:${JAVA_VERSION}-jdk-alpine
 
+# needed for the healthcheck json parsing
+RUN apk add --no-cache \
+	curl \
+    jq
+
 WORKDIR /bot
 
 VOLUME [ "/bot/data" ]
