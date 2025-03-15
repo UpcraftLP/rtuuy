@@ -12,8 +12,6 @@ kordex-gradle = "1.6.2"
 kordex = "2.3.1-SNAPSHOT"
 ktor = "3.1.1"
 
-shadow = "8.3.6"
-
 [libraries]
 detekt = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
@@ -35,7 +33,5 @@ ktor_client = ["ktor_client_core", "ktor_client_contentnegotiation", "ktor_seria
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
-
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
 kordex-plugin = { id = "dev.kordex.gradle.kordex", version.ref = "kordex-gradle" }

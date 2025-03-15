@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Environment
+        run: |
+          echo "COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
       - name: Set up Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -25,19 +30,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build
+      - name: Build with Gradle
         run: "./gradlew build"
 
-      - name: Upload artifacts (Main JAR)
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
-
         with:
-          name: Main JAR
-          path: build/libs/*-all.jar
-
-      - name: Upload artifacts (JARs)
-        uses: actions/upload-artifact@v4
-
-        with:
-          name: JARs
-          path: build/libs/*.jar
+          name: ${{ env.REPOSITORY_NAME }}-${{ env.COMMIT_SHA_SHORT }}
+          path: build/install/rtuuy
+          retention-days: 14

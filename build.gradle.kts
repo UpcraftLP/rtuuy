@@ -1,4 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
@@ -6,7 +5,6 @@ plugins {
 	alias(libs.plugins.kotlin.jvm)
 	alias(libs.plugins.kotlin.serialization)
 
-	alias(libs.plugins.shadow)
 	//alias(libs.plugins.detekt)
 
 	alias(libs.plugins.kordex.plugin)
@@ -81,12 +79,8 @@ tasks.withType<Jar> {
 		}
 	}
 }
-
-tasks.withType<ShadowJar> {
-	dependencies {
-		exclude(dependency("org.jetbrains:annotations:.*"))
-		exclude(dependency("com.google.errorprone:.*"))
-	}
+tasks.assemble {
+	dependsOn(tasks["installDist"])
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
