@@ -2,6 +2,7 @@
 detekt = "1.23.8"
 kotlin = "2.1.0"
 
+bouncycastle = "1.80"
 groovy = "3.0.24"
 jansi = "2.4.1"
 kx-ser = "1.8.0"
@@ -13,6 +14,7 @@ kordex = "2.3.1-SNAPSHOT"
 ktor = "3.1.1"
 
 [libraries]
+bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 detekt = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }

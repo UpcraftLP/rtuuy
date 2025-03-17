@@ -13,6 +13,8 @@ import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
 import dev.upcraft.rtuuy.i18n.Translations
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.Security
 
 // Get the test server ID from the env vars or a .env file
 val TEST_SERVER_ID = envOfOrNull<Snowflake>("TEST_SERVER")
@@ -31,6 +33,8 @@ object App {
 }
 
 suspend fun main() {
+	Security.addProvider(BouncyCastleProvider())
+
 	val bot = ExtensibleBot(TOKEN) {
 		botVersion = App.COMMIT_SHA ?: App.VERSION
 
