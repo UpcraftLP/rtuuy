@@ -24,7 +24,9 @@ dependencies {
 	implementation(libs.kx.ser)
 	implementation(libs.kx.ser.json)
 
+	implementation(libs.bouncycastle)
 	implementation(libs.bundles.ktor.client)
+	implementation(libs.posthog)
 
 	// Logging dependencies
 	implementation(libs.groovy)

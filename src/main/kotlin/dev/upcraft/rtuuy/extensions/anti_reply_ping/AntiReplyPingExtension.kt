@@ -29,6 +29,8 @@ import dev.kordex.core.storage.StorageType
 import dev.kordex.core.storage.StorageUnit
 import dev.kordex.core.utils.*
 import dev.upcraft.rtuuy.i18n.Translations
+import dev.upcraft.rtuuy.util.analytics.posthog
+import dev.upcraft.rtuuy.util.ext.forAnalytics
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -115,6 +117,15 @@ class AntiReplyPingExtension : Extension() {
 					member.edit {
 						reason = "Reply-pinging an user covered by the anti-reply ping system."
 						timeoutUntil = Clock.System.now().plus(config.mutePeriod)
+					}
+
+					posthog {
+						val guild = member.getGuild()
+						capture(member.id.forAnalytics(), "triggered_anti_reply_ping", mapOf(
+							"guild_id" to guild.id.toString(),
+							"guild_name" to guild.name,
+							"channel_id" to event.message.channelId.toString(),
+						))
 					}
 				}
 			}

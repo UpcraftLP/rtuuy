@@ -9,10 +9,12 @@ import dev.kordex.core.utils.envOfOrNull
 import dev.kordex.core.utils.envOrNull
 import dev.kordex.modules.data.mongodb.mongoDB
 import dev.kordex.modules.web.core.backend.utils.web
+import dev.upcraft.rtuuy.extensions.analytics.AnalyticsExtension
 import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
 import dev.upcraft.rtuuy.i18n.Translations
+import dev.upcraft.rtuuy.util.analytics.PostHogAnalytics
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 
@@ -48,6 +50,7 @@ suspend fun main() {
 				port = envOfOrNull<Int>("PORT") ?: 3000
 			}
 
+			add(::AnalyticsExtension)
 			add(::AntiReplyPingExtension)
 			add(::BanSyncExtension)
 			add(::SystemNotificationExtension)
