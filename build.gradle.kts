@@ -36,6 +36,7 @@ dependencies {
 
 kordEx {
 	kordExVersion = libs.versions.kordex.asProvider()
+	jvmTarget = javaVersion
 
 	bot {
 		// See https://docs.kordex.dev/data-collection.html
