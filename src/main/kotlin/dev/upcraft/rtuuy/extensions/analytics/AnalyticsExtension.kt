@@ -1,5 +1,9 @@
 package dev.upcraft.rtuuy.extensions.analytics
 
+import dev.kord.core.event.guild.BanAddEvent
+import dev.kord.core.event.guild.BanRemoveEvent
+import dev.kord.core.event.guild.MemberJoinEvent
+import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kordex.core.checks.isNotBot
 import dev.kordex.core.checks.memberFor
@@ -34,6 +38,79 @@ class AnalyticsExtension : Extension() {
 							)
 						)
 					}
+				}
+			}
+		}
+
+		event<MemberJoinEvent> {
+			check {
+				isNotBot()
+			}
+
+			action {
+				posthog {
+					event.member.id
+					val guild = event.getGuild()
+					capture(
+						event.member.id.forAnalytics(), "member_joined", mapOf(
+							"guild_id" to guild.id.toString(),
+							"guild_name" to guild.name,
+						)
+					)
+				}
+			}
+		}
+
+		event<MemberLeaveEvent> {
+			check {
+				isNotBot()
+			}
+
+			action {
+				posthog {
+					val guild = event.getGuild()
+					capture(
+						event.user.id.forAnalytics(), "member_left", mapOf(
+							"guild_id" to guild.id.toString(),
+							"guild_name" to guild.name,
+						)
+					)
+				}
+			}
+		}
+
+		event<BanAddEvent> {
+			check {
+				isNotBot()
+			}
+
+			action {
+				posthog {
+					val guild = event.getGuild()
+					capture(
+						event.user.id.forAnalytics(), "member_banned", mapOf(
+							"guild_id" to guild.id.toString(),
+							"guild_name" to guild.name,
+						)
+					)
+				}
+			}
+		}
+
+		event<BanRemoveEvent> {
+			check {
+				isNotBot()
+			}
+
+			action {
+				posthog {
+					val guild = event.getGuild()
+					capture(
+						event.user.id.forAnalytics(), "member_unbanned", mapOf(
+							"guild_id" to guild.id.toString(),
+							"guild_name" to guild.name,
+						)
+					)
 				}
 			}
 		}
