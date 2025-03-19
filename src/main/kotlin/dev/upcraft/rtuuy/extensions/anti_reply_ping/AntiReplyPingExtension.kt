@@ -37,9 +37,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toDateTimePeriod
 import kotlin.time.Duration.Companion.minutes
 
-@OptIn(PrivilegedIntent::class)
 class AntiReplyPingExtension : Extension() {
 	override val name = "anti_reply_ping"
+
+	@OptIn(PrivilegedIntent::class)
 	override val intents: MutableSet<Intent> = mutableSetOf(Intent.GuildMessages, Intent.MessageContent)
 
 	private val mentionRegex = Regex("<@(\\d*)>")
