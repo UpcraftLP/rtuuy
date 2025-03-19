@@ -5,16 +5,23 @@ import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.gateway.Intent
+import dev.kord.gateway.PrivilegedIntent
 import dev.kordex.core.checks.isNotBot
-import dev.kordex.core.checks.memberFor
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.upcraft.rtuuy.util.analytics.PostHogAnalytics
 import dev.upcraft.rtuuy.util.analytics.posthog
 import dev.upcraft.rtuuy.util.ext.forAnalytics
+import dev.upcraft.rtuuy.util.ext.hasUser
+import dev.upcraft.rtuuy.util.ext.isNotJoinMessage
 
 class AnalyticsExtension : Extension() {
 	override val name = "analytics"
+
+	@OptIn(PrivilegedIntent::class)
+	override val intents: MutableSet<Intent> =
+		mutableSetOf(Intent.GuildMessages, Intent.MessageContent, Intent.GuildMembers, Intent.GuildModeration)
 
 	override suspend fun setup() {
 		if (!PostHogAnalytics.init()) {
@@ -23,18 +30,23 @@ class AnalyticsExtension : Extension() {
 
 		event<MessageCreateEvent> {
 			check {
+				isNotJoinMessage()
+				hasUser()
 				isNotBot()
 			}
 
 			action {
-				memberFor(event)?.id?.forAnalytics()?.let { analyticsId ->
+				event.member?.id?.forAnalytics()?.let { analyticsId ->
 					posthog {
 						val guild = event.message.getGuild()
+						val hasAttachments = event.message.attachments.isNotEmpty()
 						capture(
-							analyticsId, "message_created", mapOf(
+							analyticsId, "message_created", listOfNotNull(
 								"guild_id" to guild.id.toString(),
 								"guild_name" to guild.name,
 								"channel_id" to event.message.channelId.toString(),
+								"length" to event.message.content.length,
+								("has_attachments" to hasAttachments).takeIf { hasAttachments },
 							)
 						)
 					}
