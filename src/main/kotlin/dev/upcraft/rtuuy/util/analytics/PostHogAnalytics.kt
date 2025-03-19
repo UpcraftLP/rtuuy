@@ -1,60 +1,44 @@
 package dev.upcraft.rtuuy.util.analytics
 
-import com.posthog.java.PostHog
-import com.posthog.java.PostHogLogger
 import dev.kordex.core.utils.envOrNull
 import dev.kordex.core.utils.getKoin
 import dev.kordex.core.utils.loadModule
-import io.github.oshai.kotlinlogging.KotlinLogging
+import net.hollowcube.posthog.PostHog
+import net.hollowcube.posthog.PostHogClient
 import org.koin.dsl.onClose
+import java.time.Duration
 
 object PostHogAnalytics {
 
 	private const val DEFAULT_INSTANCE_URL = "https://us.i.posthog.com"
 
-	fun init(): PostHog? {
-		envOrNull("POSTHOG_API_KEY")?.let { posthogApiKey ->
-			val posthogInstanceUrl = envOrNull("POSTHOG_INSTANCE_URL") ?: DEFAULT_INSTANCE_URL
+	fun init(): Boolean {
+		envOrNull("POSTHOG_PROJECT_API_KEY")?.let { projectApiKey ->
+			PostHog.init(projectApiKey) { builder ->
+				val posthogInstanceUrl = envOrNull("POSTHOG_INSTANCE_URL") ?: DEFAULT_INSTANCE_URL
+				builder.endpoint(posthogInstanceUrl)
+
+				// required for ex. feature flags, local evaluation
+				envOrNull("POSTHOG_PERSONAL_API_KEY")?.let { personalApiKey ->
+					builder.personalApiKey(personalApiKey)
+				}
+
+				builder
+			}
 
 			loadModule {
-				single {
-					PostHog.Builder(posthogApiKey).host(posthogInstanceUrl).logger(Logger()).build()
-				}.onClose { it?.shutdown() }
+				factory { PostHog.getClient() }.onClose { it?.shutdown(Duration.ofSeconds(5)) }
 			}
+
+			return true
 		}
 
-		return getKoin().getOrNull<PostHog>()
+		return false
 	}
 }
 
-suspend fun posthog(posthog: suspend PostHog.() -> Unit) {
-	getKoin().getOrNull<PostHog>()?.let {
+suspend fun posthog(posthog: suspend PostHogClient.() -> Unit) {
+	getKoin().getOrNull<PostHogClient>()?.let {
 		posthog(it)
 	}
-}
-
-class Logger: PostHogLogger {
-
-	private val logger = KotlinLogging.logger(PostHogAnalytics.javaClass.name)
-
-	override fun debug(message: String?) {
-		logger.debug { message }
-	}
-
-	override fun info(message: String?) {
-		logger.info { message }
-	}
-
-	override fun warn(message: String?) {
-		logger.warn { message }
-	}
-
-	override fun error(message: String?) {
-		logger.error { message }
-	}
-
-	override fun error(message: String?, throwable: Throwable?) {
-		logger.error(throwable) { message }
-	}
-
 }

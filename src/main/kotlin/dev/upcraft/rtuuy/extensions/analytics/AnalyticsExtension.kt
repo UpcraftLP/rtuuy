@@ -13,24 +13,26 @@ class AnalyticsExtension : Extension() {
 	override val name = "analytics"
 
 	override suspend fun setup() {
-		PostHogAnalytics.init()?.let {
-			event<MessageCreateEvent> {
-				check {
-					isNotBot()
-				}
+		if (!PostHogAnalytics.init()) {
+			return
+		}
 
-				action {
-					memberFor(event)?.id?.forAnalytics()?.let { analyticsId ->
-						posthog {
-							val guild = event.message.getGuild()
-							capture(
-								analyticsId, "message_created", mapOf(
-									"guild_id" to guild.id.toString(),
-									"guild_name" to guild.name,
-									"channel_id" to event.message.channelId.toString(),
-								)
+		event<MessageCreateEvent> {
+			check {
+				isNotBot()
+			}
+
+			action {
+				memberFor(event)?.id?.forAnalytics()?.let { analyticsId ->
+					posthog {
+						val guild = event.message.getGuild()
+						capture(
+							analyticsId, "message_created", mapOf(
+								"guild_id" to guild.id.toString(),
+								"guild_name" to guild.name,
+								"channel_id" to event.message.channelId.toString(),
 							)
-						}
+						)
 					}
 				}
 			}

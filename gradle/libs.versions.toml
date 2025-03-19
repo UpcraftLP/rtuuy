@@ -12,7 +12,7 @@ logging = "7.0.5"
 kordex-gradle = "1.7.0"
 kordex = "2.3.1-SNAPSHOT"
 ktor = "3.1.1"
-posthog = "1.2.0"
+posthog = "0.1.6"
 
 [libraries]
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
@@ -28,7 +28,7 @@ logging = { module = "io.github.oshai:kotlin-logging", version.ref = "logging" }
 ktor_client_core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor_client_contentnegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor_serialization_json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-posthog = { module = "com.posthog.java:posthog", version.ref = "posthog" }
+posthog = { module = "dev.hollowcube:posthog-java", version.ref = "posthog" }
 
 [bundles]
 ktor_client = ["ktor_client_core", "ktor_client_contentnegotiation", "ktor_serialization_json"]
