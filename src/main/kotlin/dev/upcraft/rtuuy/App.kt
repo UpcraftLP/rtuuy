@@ -14,7 +14,6 @@ import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
 import dev.upcraft.rtuuy.i18n.Translations
-import dev.upcraft.rtuuy.util.analytics.PostHogAnalytics
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 
