@@ -12,7 +12,7 @@ logging = "7.0.5"
 kordex-gradle = "1.7.0"
 kordex = "2.3.1-SNAPSHOT"
 ktor = "3.1.1"
-posthog = "0.1.6"
+posthog = "21"
 
 [libraries]
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
