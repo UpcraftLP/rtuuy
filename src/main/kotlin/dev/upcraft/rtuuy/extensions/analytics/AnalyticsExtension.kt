@@ -47,7 +47,7 @@ class AnalyticsExtension : Extension() {
 								"channel_id" to event.message.channelId.toString(),
 								"length" to event.message.content.length,
 								("has_attachments" to hasAttachments).takeIf { hasAttachments },
-							)
+							).toMap()
 						)
 					}
 				}
