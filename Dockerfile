@@ -2,7 +2,7 @@
 # syntax=docker/dockerfile:1
 
 ARG JAVA_VERSION=21
-FROM eclipse-temurin:${JAVA_VERSION}-jdk-alpine
+FROM --platform=$BUILDPLATFORM eclipse-temurin:${JAVA_VERSION}-jdk-alpine
 
 # needed for the healthcheck json parsing
 RUN apk add --no-cache \
