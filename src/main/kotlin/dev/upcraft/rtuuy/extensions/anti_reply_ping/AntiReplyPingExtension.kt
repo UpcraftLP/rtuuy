@@ -43,7 +43,7 @@ class AntiReplyPingExtension : Extension() {
 	@OptIn(PrivilegedIntent::class)
 	override val intents: MutableSet<Intent> = mutableSetOf(Intent.GuildMessages, Intent.MessageContent)
 
-	private val mentionRegex = Regex("<@(\\d*)>")
+	private val userMentionRegex = Regex("<@(\\d*)>")
 
 	private val storageUnit = StorageUnit<AntiReplyPingConfig>(
 		StorageType.Config,
@@ -73,7 +73,7 @@ class AntiReplyPingExtension : Extension() {
 				return fail("User has a role in the excluded list")
 			}
 
-			val regularMentions = mentionRegex.findAll(event.message.content).map {
+			val regularMentions = userMentionRegex.findAll(event.message.content).map {
 				Snowflake(it.groupValues.last())
 			}
 
