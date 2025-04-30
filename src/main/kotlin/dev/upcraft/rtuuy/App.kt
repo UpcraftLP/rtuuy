@@ -2,6 +2,7 @@ package dev.upcraft.rtuuy
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.entity.effectiveName
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.utils.env
@@ -84,6 +85,10 @@ suspend fun main() {
 							value = Translations.About.ApplicationInfo.GitField.text.translateNamed(info)
 							inline = true
 						}
+						field {
+							name = Translations.About.ApplicationInfo.TermsOfUse.title.translateNamed(info)
+							value = Translations.About.ApplicationInfo.TermsOfUse.text.translateNamed(info)
+						}
 
 						footer {
 							text = Translations.About.ApplicationInfo.footer.translateNamed(info)
@@ -98,13 +103,16 @@ suspend fun main() {
 }
 
 suspend fun getAppInfo(kord: Kord): MutableMap<String, Any?> {
-	val map = HashMap<String, Any?>()
-	map["version"] = App.VERSION
-	map["author"] = App.AUTHOR
-	map["repository_url"] = App.REPOSITORY_URL
-	map["commit_url"] = App.COMMIT_URL
-	map["commit_sha"] = App.COMMIT_SHA
-	map["bot_username"] = kord.getSelf().username
-	map["application_id"] = kord.getApplicationInfo().id
-	return map
+	return mutableMapOf(
+		"version" to App.VERSION,
+		"author" to App.AUTHOR,
+		"repository_url" to App.REPOSITORY_URL,
+		"commit_url" to App.COMMIT_URL,
+		"commit_sha" to App.COMMIT_SHA,
+		"bot_id" to kord.getSelf().id,
+		"bot_username" to kord.getSelf().effectiveName,
+		"application_id" to kord.getApplicationInfo().id,
+		"privacy_policy_url" to (kord.getApplicationInfo().privacyPolicyUrl ?: App.REPOSITORY_URL),
+		"terms_of_service_url" to (kord.getApplicationInfo().termsOfServiceUrl ?: App.REPOSITORY_URL),
+	)
 }
