@@ -4,7 +4,6 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
-import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.gateway.Intent
 import dev.kordex.core.annotations.NotTranslated
 import dev.kordex.core.checks.failed
@@ -22,6 +21,7 @@ import dev.kordex.core.utils.env
 import dev.kordex.core.utils.envOf
 import dev.kordex.core.utils.scheduling.Scheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
@@ -34,7 +34,7 @@ class BanSyncExtension : Extension() {
 	private val syncedServerIds = env("SYNCED_BAN_SERVERS")
 	private val isDryRun = envOf<Boolean>("DRY_RUN")
 	private var syncedServers = mutableListOf<Snowflake>()
-	private var syncingBans = mutableListOf<Snowflake>()
+	private var syncingBans = mutableMapOf<Snowflake, BanEntry>()
 	private var hasStartedInitialSync = false
 	private var isSyncing = false
 	private val scheduler = Scheduler()
@@ -64,7 +64,7 @@ class BanSyncExtension : Extension() {
 	}
 
 	@OptIn(NotTranslated::class)
-	private suspend fun <T : Event> CheckContext<T>.isNotSyncing() {
+	private suspend fun <T : Event> CheckContext<T>.isNotSyncingUser() {
 		if (!passed) {
 			return
 		}
@@ -118,72 +118,29 @@ class BanSyncExtension : Extension() {
 		event<BanAddEvent> {
 			check {
 				isSyncedGuild()
-				isNotSyncing()
+				isNotSyncingUser()
 			}
 
 			action {
+				val ban = BanEntry(event.user.id, event.guildId, event.getBan().reason ?: "unknown", Clock.System.now())
+				val originalGuild = event.guild.asGuild()
+
 				val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.banSyncOnBanAdd")
-				val guildName = event.guild.asGuildOrNull()?.name
-				logger.info {
-					"User ${event.user.username} (${event.user.id}) has been banned on $guildName (${event.guildId})! Syncing that ban between synced servers."
-				}
+				logger.info { "User ${event.user.username} (${event.user.id}) has been banned on ${originalGuild.name} (${originalGuild.id})! Syncing that ban between synced servers." }
 
-				syncingBans.add(event.user.id)
-				val banReason = event.getBan().reason
+				syncingBans.put(event.user.id, ban)
 				val syncedServers = syncedServers
-				for (syncedServer in syncedServers) {
-					if (syncedServer != event.guildId) {
-						val guild = kord.getGuildOrNull(syncedServer)
-
-						if (guild == null) {
-							logger.failed("Synced server with ID $syncedServer has failed to sync! Removing it from the synced server list.")
-							syncedServers.remove(syncedServer)
-							saveConfig()
-						} else {
-							if (guild.getBanOrNull(event.user.id) == null) {
-								guild.ban(event.user.id) {
-									reason = "Synced from $guildName (${event.guild.id}). Reason: $banReason"
-								}
-								logger.passed("Successfully synced the ban to ${guild.name} (${guild.id})")
-							} else {
-								logger.failed("User has already been banned on ${guild.name} (${guild.id})")
+				syncedServers.filter { it != event.guildId }.forEach { guildId ->
+					kord.getGuildOrNull(guildId)?.also { guild ->
+						if (guild.getBanOrNull(ban.userId) == null) {
+							guild.ban(ban.userId) {
+								reason = ban.toReasonString()
 							}
-						}
-					}
-				}
-				syncingBans.remove(event.user.id)
-			}
-		}
-
-		event<BanRemoveEvent> {
-			check {
-				isSyncedGuild()
-				isNotSyncing()
-			}
-
-			action {
-				val logger = KotlinLogging.logger("dev.upcraft.rtuuy.BanSyncExtension.banSyncOnBanRemove")
-				val guildName = event.guild.asGuildOrNull()?.name
-				logger.info {
-					"User ${event.user.username} (${event.user.id}) has been unbanned on $guildName (${event.guildId})! Syncing that unban between synced servers."
-				}
-
-				syncingBans.add(event.user.id)
-				val syncedServers = syncedServers
-				for (syncedServer in syncedServers) {
-					if (syncedServer != event.guildId) {
-						val guild = kord.getGuildOrNull(syncedServer)
-
-						if (guild == null) {
-							logger.failed("Synced server with ID $syncedServer has failed to sync! Removing it from the synced server list.")
-							syncedServers.remove(syncedServer)
-							saveConfig()
+							logger.info { "Successfully synced the ban to ${guild.name} (${guild.id})" }
 						} else {
-							if (guild.getBanOrNull(event.user.id) != null) {
-								guild.unban(event.user.id, "Synced from $guildName (${event.guild.id}).")
-							}
+							logger.debug { "User has already been banned on ${guild.name} (${guild.id})" }
 						}
-					}
+					} ?: logger.failed("Unable to sync ban to $guildId")
 				}
 				syncingBans.remove(event.user.id)
 			}
@@ -203,62 +160,45 @@ class BanSyncExtension : Extension() {
 
 		// Just in case
 		if (config.lastSynced < now) {
-			val guildToBan = mutableMapOf<Snowflake, MutableMap<Snowflake, String?>>()
-
-			for (syncedServer in syncedServers) {
-				val guild = kord.getGuildOrNull(syncedServer)
-
-				if (guild == null) {
-					logger.failed("Synced server with ID $syncedServer has failed to sync! Removing it from the synced server list.")
-					syncedServers.remove(syncedServer)
-				} else {
-					guild.bans.collect {
-						if (!guildToBan.containsKey(it.userId)) {
-							guildToBan[it.userId] = mutableMapOf(guild.id to it.reason)
-						} else {
-							val existingMap = guildToBan[it.userId]
-							if (existingMap != null) {
-								existingMap[guild.id] = it.reason
-								guildToBan[it.userId] = existingMap
-							}
+			val toBan = mutableMapOf<Snowflake, BanEntry>()
+			syncedServers.forEach { guildId ->
+				kord.getGuildOrNull(guildId)?.also { guild ->
+					guild.bans
+						.filter {
+							// ignore bans that were created due to sync
+							// TODO track this in a DB maybe?
+							it.reason?.startsWith(BanEntry.SYNCED_PREFIX) != true
 						}
-					}
+						.collect { ban ->
+							val banEntry = BanEntry.from(ban, now)
+							syncingBans.put(ban.userId, banEntry)
+							toBan.putIfAbsent(ban.userId, banEntry)
+						}
+				} ?: {
+					// TODO track error
+					logger.error { "Ban sync: unable to find server with ID $guildId" }
 				}
 			}
 
-			for (syncedServer in syncedServers) {
-				val guild = kord.getGuildOrNull(syncedServer)
-
-				if (guild == null) {
-					logger.failed("Synced server with ID $syncedServer has failed to sync! Removing it from the synced server list.")
-					syncedServers.remove(syncedServer)
-				} else {
-					for (entry in guildToBan) {
-						syncingBans.add(entry.key)
-						val guildName = kord.getGuildOrNull(guild.id)?.name ?: "[Guild Unknown]"
-						if (entry.value.containsKey(guild.id)) {
-							if (isDryRun) {
-								logger.info { "Dry-Run: Ignoring redundant ban for ${entry.key} on $guildName (${guild.id})" }
-							}
-						} else {
-							val username = guild.getMemberOrNull(entry.key)?.username ?: "[Username Unknown]"
-							val newReason = entry.value.map {
-								"${it.value} (${bot.kordRef.getGuildOrNull(it.key)?.name ?: it.key})"
-							}.joinToString(", ")
-							if (isDryRun) {
-								logger.info { "Dry-Run on $guildName (${guild.id})): Banned $username (${entry.key}) for: $newReason" }
-							} else {
-								logger.info { "$guildName (${guild.id})): Banned $username (${entry.key}) for: $newReason" }
-								guild.ban(entry.key) {
-									logger.info { "$guildName (${guild.id})): Banned $username (${entry.key}) for: $newReason" }
-									reason = "Synced ban. Reasons: $newReason"
+			syncedServers.forEach { guildId ->
+				kord.getGuildOrNull(guildId)?.also { guild ->
+					toBan.values.filter { it.originGuildId != guildId }.forEach { ban ->
+						val existingBan = guild.getBanOrNull(ban.userId)
+						if(existingBan == null) {
+							logger.info { "Syncing ban of ${ban.userId} to ${guild.name} (${guild.id})" }
+							if(!isDryRun) {
+								guild.ban(ban.userId) {
+									reason = ban.toReasonString()
 								}
 							}
 						}
-						syncingBans.remove(entry.key)
 					}
+				} ?: {
+					// TODO track error
+					logger.error { "Ban sync: unable to find server with ID $guildId" }
 				}
 			}
+			toBan.keys.forEach { syncingBans.remove(it) }
 
 			config.lastSynced = now
 			saveConfig()
@@ -281,9 +221,4 @@ class BanSyncExtension : Extension() {
 	private suspend fun saveConfig() {
 		storageUnit.save()
 	}
-
-	data class BanEntry(
-		val guildId: MutableSet<Snowflake>,
-		val reason: MutableList<String?>
-	)
 }
