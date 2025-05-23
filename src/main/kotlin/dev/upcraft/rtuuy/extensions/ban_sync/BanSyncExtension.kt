@@ -31,8 +31,8 @@ class BanSyncExtension : Extension() {
 	override val name = "ban_sync"
 	override val intents: MutableSet<Intent> = mutableSetOf(Intent.GuildModeration)
 
-	private val syncedServerIds = env("SYNCED_BAN_SERVERS")
-	private val isDryRun = envOf<Boolean>("DRY_RUN")
+	private val syncedServerIds = env("BAN_SYNC_SERVER_IDS")
+	private val isDryRun = envOf<Boolean>("BAN_SYNC_DRY_RUN")
 	private var syncedServers = mutableListOf<Snowflake>()
 	private var syncingBans = mutableMapOf<Snowflake, BanEntry>()
 	private var hasStartedInitialSync = false
