@@ -27,6 +27,8 @@ dependencies {
 	implementation(libs.bouncycastle)
 	implementation(libs.bundles.ktor.client)
 	implementation(libs.posthog)
+	implementation(libs.bundles.exposed)
+	implementation(libs.bundles.database)
 
 	// Logging dependencies
 	implementation(libs.groovy)
@@ -52,7 +54,6 @@ kordEx {
 		translationBundle = "rtuuy.strings"
 	}
 
-	module("data-mongodb")
 	module("web-backend")
 }
 

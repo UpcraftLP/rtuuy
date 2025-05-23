@@ -3,27 +3,34 @@ services:
     image: ghcr.io/upcraftlp/rtuuy:latest
     restart: unless-stopped
     depends_on:
-      - mongodb
+      - postgres
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres/${DATABASE_NAME:-rtuuy}
     env_file:
       - .env
-    environment:
-      ADAPTER_MONGODB_URI: mongodb://${DB_ROOT_USER}:${DB_ROOT_PASS:?no DB password set!}@mongodb:27017/?authSource=admin
     networks:
       - internal
 
-  mongodb:
-    image: mongo
+  postgres:
+    image: docker.io/library/postgres:17-alpine
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      POSTGRES_USER: ${DATABASE_USERNAME:?database user required}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?database password required}
+      POSTGRES_DB: ${DATABASE_NAME:-winterjam-mc-link}
     volumes:
-      - rtuuy_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - internal
 
 volumes:
-  rtuuy_data:
+  postgres_data:
 
 networks:
   internal:

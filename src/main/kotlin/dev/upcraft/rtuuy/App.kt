@@ -8,13 +8,15 @@ import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.utils.env
 import dev.kordex.core.utils.envOfOrNull
 import dev.kordex.core.utils.envOrNull
-import dev.kordex.modules.data.mongodb.mongoDB
+import dev.kordex.core.utils.loadModule
 import dev.kordex.modules.web.core.backend.utils.web
 import dev.upcraft.rtuuy.extensions.analytics.AnalyticsExtension
 import dev.upcraft.rtuuy.extensions.anti_reply_ping.AntiReplyPingExtension
 import dev.upcraft.rtuuy.extensions.ban_sync.BanSyncExtension
 import dev.upcraft.rtuuy.extensions.system_notifications.SystemNotificationExtension
 import dev.upcraft.rtuuy.i18n.Translations
+import dev.upcraft.rtuuy.util.DatabaseFactory
+import dev.upcraft.rtuuy.util.registerDataRepositories
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 
@@ -44,6 +46,15 @@ suspend fun main() {
 			defaultGuild(TEST_SERVER_ID)
 		}
 
+		hooks {
+			afterKoinSetup {
+				loadModule {
+					single { DatabaseFactory.create() }
+				}
+				registerDataRepositories()
+			}
+		}
+
 		extensions {
 			web {
 				hostname = envOrNull("FRONTEND_URL")
@@ -55,8 +66,6 @@ suspend fun main() {
 			add(::BanSyncExtension)
 			add(::SystemNotificationExtension)
 		}
-
-		mongoDB()
 
 		about {
 			ephemeral = false

@@ -1,34 +1,18 @@
 services:
-  mongodb:
-    image: mongo
-    restart: unless-stopped
+  db:
+    image: docker.io/library/postgres:17-alpine
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    ports:
+      - "5432:5432"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      POSTGRES_DB: winterjam
+      POSTGRES_USER: winterjam
+      POSTGRES_PASSWORD: b55826c5-2273-4130-82b8-0116eeef045a
     volumes:
-      - rtuuy_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - internal
-
-  mongo-express:
-    image: mongo-express
-    restart: unless-stopped
-    depends_on:
-      - mongodb
-    environment:
-      ME_CONFIG_MONGODB_URL: mongodb://${DB_ROOT_USER}:${DB_ROOT_PASS}@mongodb:27017/?authSource=admin
-      ME_CONFIG_BASICAUTH: false
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${DB_ROOT_USER}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${DB_ROOT_PASS}
-    ports:
-      - "8081:8081"
-    networks:
-      - internal
-
-volumes:
-  rtuuy_data:
-
-networks:
-  internal:
+      - ./.data/postgres:/var/lib/postgresql/data
