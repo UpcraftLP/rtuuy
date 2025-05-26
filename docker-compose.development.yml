@@ -11,9 +11,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: rtuuy
-      POSTGRES_USER: rtuuy
-      POSTGRES_PASSWORD: 1a60250b-e319-4c25-a6f7-1b8f78f06f70
+      POSTGRES_DB: ${DATABASE_NAME:-rtuuy}
+      POSTGRES_USER: ${DATABASE_USERNAME:-rtuuy}
+      POSTGRES_PASSWORD: ${DATABASE_PASWORD:-1a60250b-e319-4c25-a6f7-1b8f78f06f70}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

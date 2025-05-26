@@ -21,9 +21,9 @@ services:
       retries: 5
       timeout: 5s
     environment:
+      POSTGRES_DB: ${DATABASE_NAME:-rtuuy}
       POSTGRES_USER: ${DATABASE_USERNAME:?database user required}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?database password required}
-      POSTGRES_DB: ${DATABASE_NAME:-winterjam-mc-link}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
