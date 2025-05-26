@@ -19,6 +19,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import dev.upcraft.rtuuy.model.BanSyncRepository
 import dev.upcraft.rtuuy.model.DiscordUserRepository
 import dev.upcraft.rtuuy.util.analytics.posthog
+import dev.upcraft.rtuuy.util.ext.asSeconds
 import dev.upcraft.rtuuy.util.ext.ifNull
 import dev.upcraft.rtuuy.util.ext.isNotSyncedBan
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -159,7 +160,7 @@ class BanSyncExtension : Extension() {
 		hasStartedInitialSync = true
 		try {
 			isSyncing.store(true)
-			val startTime = Clock.System.now()
+			val startTime = Clock.System.now().asSeconds()
 			logger.info { "Running scheduled ban sync at $startTime" }
 
 			val syncGroups = syncedBans.getAllSyncGroups()
