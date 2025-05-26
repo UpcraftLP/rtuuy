@@ -1,6 +1,6 @@
 [versions]
 detekt = "1.23.8"
-kotlin = "2.1.0"
+kotlin = "2.1.21"
 
 bouncycastle = "1.80"
 groovy = "3.0.24"
