@@ -175,7 +175,7 @@ class BanSyncExtension : Extension() {
 				}
 
 				guild.bans.collect {
-					bannedUsers.computeIfAbsent(guild.id) { mutableMapOf<Snowflake, Ban>() }.put(it.userId, it)
+					bannedUsers.computeIfAbsent(guild.id) { mutableMapOf() }.put(it.userId, it)
 				}
 			}
 
