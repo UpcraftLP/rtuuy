@@ -10,15 +10,15 @@ import org.jetbrains.exposed.dao.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.ULongIdTable
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.kotlin.datetime.CurrentTimestamp
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
+import kotlin.collections.flatMap
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 object BanSyncGroups : UUIDTable("ban_sync_groups") {
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
@@ -31,9 +31,11 @@ object BanSyncGroups : UUIDTable("ban_sync_groups") {
 	}
 }
 
-object GuildsInBanSyncGroups: Table() {
-	val groupId = reference("group_id", BanSyncGroups, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
-	val guildId = reference("guild_id", DiscordGuilds, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
+object GuildsInBanSyncGroups : Table() {
+	val groupId =
+		reference("group_id", BanSyncGroups, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
+	val guildId =
+		reference("guild_id", DiscordGuilds, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 	val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
@@ -62,7 +64,7 @@ class BanSyncGroup(id: EntityID<UUID>) : UUIDEntity(id) {
 /**
  * tracks when bans TO a guild were last synced, from all other guilds that it is synced with
  */
-object BanSyncTimes: ULongIdTable("ban_sync_times", columnName = "guild_id") {
+object BanSyncTimes : ULongIdTable("ban_sync_times", columnName = "guild_id") {
 	val lastSynced = timestamp("last_synced").default(Instant.DISTANT_PAST)
 }
 
@@ -72,12 +74,60 @@ class BanSyncTime(id: EntityID<ULong>) : ULongEntity(id) {
 	var lastSynced by BanSyncTimes.lastSynced
 }
 
-class BanSyncRepository(private val database: Database) {
+class BanSyncRepository(private val database: Database, private val discordUsers: DiscordUserRepository) {
 
-	suspend fun getSyncedGuildsWith(guild: GuildBehavior): List<DiscordGuild> = withContext(Dispatchers.IO) {
+	suspend fun createSyncGroup(guild: GuildBehavior): BanSyncGroup = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			BanSyncGroup.find { GuildsInBanSyncGroups.guildId eq guild.id.value }.with(BanSyncGroup::guilds).flatMap { it.guilds }.distinct().filter { it.id.value != guild.id.value }.toList()
+			val dbGuild = discordUsers.getOrCreateGuild(guild)
+
+			BanSyncGroup.new {
+				guilds = SizedCollection(dbGuild)
+			}
 		}
+	}
+
+	suspend fun getSyncGroups(guild: GuildBehavior): List<BanSyncGroupDto> = withContext(Dispatchers.IO) {
+		newSuspendedTransaction(db = database) {
+			val query = BanSyncGroups.innerJoin(GuildsInBanSyncGroups)
+				.select(BanSyncGroups.columns)
+				.where { GuildsInBanSyncGroups.guildId eq guild.id.value }
+				.orderBy(BanSyncGroups.createdAt)
+
+			BanSyncGroup.wrapRows(query).with(BanSyncGroup::guilds).map { it.toDto() }.toList()
+		}
+	}
+
+	suspend fun addToSyncGroup(guild: GuildBehavior, groupId: UUID): Boolean = withContext(Dispatchers.IO) {
+		newSuspendedTransaction(db = database) {
+			val syncGroup = BanSyncGroup.findById(groupId)?.load(BanSyncGroup::guilds)
+			if (syncGroup == null) {
+				return@newSuspendedTransaction false
+			}
+
+			syncGroup.guilds = SizedCollection(syncGroup.guilds.plus(discordUsers.getOrCreateGuild(guild)))
+
+			return@newSuspendedTransaction true
+		}
+	}
+
+	suspend fun removeFromSyncGroup(guild: GuildBehavior, groupId: UUID): Boolean = withContext(Dispatchers.IO) {
+		newSuspendedTransaction(db = database) {
+			val syncGroup = BanSyncGroup.findById(groupId)?.load(BanSyncGroup::guilds)
+			if (syncGroup == null) {
+				return@newSuspendedTransaction false
+			}
+
+			syncGroup.guilds = SizedCollection(syncGroup.guilds.minus(discordUsers.getOrCreateGuild(guild)))
+
+			return@newSuspendedTransaction true
+		}
+	}
+
+	suspend fun getSyncedGuildsWith(guild: GuildBehavior): List<DiscordGuild> {
+		return getSyncGroups(guild)
+			.flatMap { it.guilds }
+			.distinct()
+			.filter { it.id.value != guild.id.value }
 	}
 
 	suspend fun getAllSyncGroups(): List<BanSyncGroupDto> = withContext(Dispatchers.IO) {

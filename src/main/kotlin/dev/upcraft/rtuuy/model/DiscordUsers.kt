@@ -122,7 +122,7 @@ class DiscordUserRepository(private val database: Database) {
 
 	suspend fun getOrCreateUser(user: User, guild: GuildBehavior): DiscordUser = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			val guildEntity = DiscordGuild.findById(guild.id.value) ?: DiscordGuild.new(guild.id.value) {}
+			val guildEntity = getOrCreateGuild(guild)
 
 			DiscordUser.findById(user.id.value)?.apply {
 				val needsUpdate = (handle != user.username)
@@ -160,24 +160,24 @@ class DiscordUserRepository(private val database: Database) {
 		DiscordGuild.findById(guild.value)?.users?.count() ?: 0
 	}
 
-	suspend fun allGuilds(loadUsers: Boolean = false): List<DiscordGuild> = withContext(Dispatchers.IO) {
-		newSuspendedTransaction(db = database) {
-			var tmp = DiscordGuild.all()
-			if (loadUsers) {
-				tmp = tmp.with(DiscordGuild::users)
-			}
-			tmp.toList()
-		}
-	}
-
 	suspend fun allUsers(): List<DiscordUser> = withContext(Dispatchers.IO) {
 		DiscordUser.all().toList()
 	}
 
-	suspend fun getGuild(guild: GuildBehavior, users: Boolean = false): DiscordGuild? = withContext(Dispatchers.IO) {
+	suspend fun getOrCreateGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild = withContext(Dispatchers.IO) {
+		newSuspendedTransaction(db = database) {
+			(DiscordGuild.findById(guild.id.value) ?: DiscordGuild.new(guild.id.value) {}).apply {
+				if (loadUsers) {
+					load(DiscordGuild::users)
+				}
+			}
+		}
+	}
+
+	suspend fun getGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild? = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
 			DiscordGuild.findById(guild.id.value)?.apply {
-				if (users) {
+				if (loadUsers) {
 					load(DiscordGuild::users)
 				}
 			}
@@ -187,6 +187,16 @@ class DiscordUserRepository(private val database: Database) {
 	suspend fun deleteGuild(dbGuild: DiscordGuild) = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
 			dbGuild.delete()
+		}
+	}
+
+	suspend fun allGuilds(loadUsers: Boolean = false): List<DiscordGuild> = withContext(Dispatchers.IO) {
+		newSuspendedTransaction(db = database) {
+			var tmp = DiscordGuild.all()
+			if (loadUsers) {
+				tmp = tmp.with(DiscordGuild::users)
+			}
+			tmp.toList()
 		}
 	}
 }
