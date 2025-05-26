@@ -160,6 +160,7 @@ class BanSyncExtension : Extension() {
 		try {
 			isSyncing.store(true)
 			val startTime = Clock.System.now()
+			logger.info { "Running scheduled ban sync at $startTime" }
 
 			val syncGroups = syncedBans.getAllSyncGroups()
 
