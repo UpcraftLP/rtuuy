@@ -15,4 +15,7 @@ services:
       POSTGRES_USER: rtuuy
       POSTGRES_PASSWORD: 1a60250b-e319-4c25-a6f7-1b8f78f06f70
     volumes:
-      - ./.data/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
