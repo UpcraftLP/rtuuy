@@ -73,10 +73,10 @@ class DiscordGuild(id: EntityID<ULong>) : ULongEntity(id) {
 		}
 	}
 
-	fun update(block: DiscordGuild.() -> Unit) {
-		transaction {
+	suspend fun update(block: suspend DiscordGuild.() -> Unit) {
+		newSuspendedTransaction {
 			val old = updatedAt
-			apply(block)
+			block()
 			if (updatedAt == old) {
 				updatedAt = Clock.System.now()
 			}
