@@ -11,8 +11,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: winterjam
-      POSTGRES_USER: winterjam
-      POSTGRES_PASSWORD: b55826c5-2273-4130-82b8-0116eeef045a
+      POSTGRES_DB: rtuuy
+      POSTGRES_USER: rtuuy
+      POSTGRES_PASSWORD: 1a60250b-e319-4c25-a6f7-1b8f78f06f70
     volumes:
       - ./.data/postgres:/var/lib/postgresql/data
