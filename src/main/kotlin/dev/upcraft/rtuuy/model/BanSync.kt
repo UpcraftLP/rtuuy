@@ -1,5 +1,6 @@
 package dev.upcraft.rtuuy.model
 
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.upcraft.rtuuy.model.dto.BanSyncGroupDto
 import kotlinx.coroutines.Dispatchers
@@ -64,12 +65,12 @@ class BanSyncGroup(id: EntityID<UUID>) : UUIDEntity(id) {
 /**
  * tracks when bans TO a guild were last synced, from all other guilds that it is synced with
  */
-object BanSyncTimes : ULongIdTable("ban_sync_times", columnName = "guild_id") {
+object BanSyncTimes : SnowflakeIdTable("ban_sync_times", columnName = "guild_id") {
 	val lastSynced = timestamp("last_synced").default(Instant.DISTANT_PAST)
 }
 
-class BanSyncTime(id: EntityID<ULong>) : ULongEntity(id) {
-	companion object : ULongEntityClass<BanSyncTime>(BanSyncTimes)
+class BanSyncTime(id: EntityID<Snowflake>) : SnowflakeEntity(id) {
+	companion object : SnowflakeEntityClass<BanSyncTime>(BanSyncTimes)
 
 	var lastSynced by BanSyncTimes.lastSynced
 }
@@ -90,7 +91,7 @@ class BanSyncRepository(private val database: Database, private val discordUsers
 		newSuspendedTransaction(db = database) {
 			val query = BanSyncGroups.innerJoin(GuildsInBanSyncGroups)
 				.select(BanSyncGroups.columns)
-				.where { GuildsInBanSyncGroups.guildId eq guild.id.value }
+				.where { GuildsInBanSyncGroups.guildId eq guild.id }
 				.orderBy(BanSyncGroups.createdAt)
 
 			BanSyncGroup.wrapRows(query).with(BanSyncGroup::guilds).map { it.toDto() }.toList()
@@ -127,7 +128,7 @@ class BanSyncRepository(private val database: Database, private val discordUsers
 		return getSyncGroups(guild)
 			.flatMap { it.guilds }
 			.distinct()
-			.filter { it.id.value != guild.id.value }
+			.filter { it.id.value != guild.id }
 	}
 
 	suspend fun getAllSyncGroups(): List<BanSyncGroupDto> = withContext(Dispatchers.IO) {
@@ -138,15 +139,15 @@ class BanSyncRepository(private val database: Database, private val discordUsers
 
 	suspend fun getLastSynced(guild: GuildBehavior): Instant = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			BanSyncTime.findById(guild.id.value)?.lastSynced ?: Instant.DISTANT_PAST
+			BanSyncTime.findById(guild.id)?.lastSynced ?: Instant.DISTANT_PAST
 		}
 	}
 
 	suspend fun setLastSynced(guild: GuildBehavior, time: Instant = Clock.System.now()) = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			BanSyncTime.findByIdAndUpdate(guild.id.value) {
+			BanSyncTime.findByIdAndUpdate(guild.id) {
 				it.lastSynced = time
-			} ?: BanSyncTime.new(guild.id.value) {
+			} ?: BanSyncTime.new(guild.id) {
 				lastSynced = time
 			}
 		}

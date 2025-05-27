@@ -102,7 +102,7 @@ class BanSyncExtension : Extension() {
 				syncingBans.put(event.user.id, ban)
 				try {
 					val syncedGuilds = syncedBans.getSyncedGuildsWith(event.guild)
-						.map { Snowflake(it.id.value) }
+						.map { it.id.value }
 
 					syncedGuilds.ifEmpty {
 						return@action
@@ -168,7 +168,7 @@ class BanSyncExtension : Extension() {
 			// step 1: consolidate all users to ban, sorted by origin guild
 			val bannedUsers = ConcurrentHashMap<Snowflake, MutableMap<Snowflake, Ban>>()
 			syncGroups.flatMap { it.guilds }.distinct().forEach { dbGuild ->
-				val guild = kord.getGuildOrNull(Snowflake(dbGuild.id.value))
+				val guild = kord.getGuildOrNull(dbGuild.id.value)
 				if (guild == null) {
 					logger.warn { "Unable to find server with ID ${dbGuild.id.value}" }
 					return@forEach
@@ -188,8 +188,8 @@ class BanSyncExtension : Extension() {
 
 				// figure out which guilds to sync this guild with
 				val targetGuildIds = syncGroups
-					.filter { it.guilds.any { g -> g.id.value == guildId.value } }
-					.flatMap { it.guilds.map { g -> Snowflake(g.id.value) } }
+					.filter { it.guilds.any { g -> g.id.value == guildId } }
+					.flatMap { it.guilds.map { g -> g.id.value } }
 					.distinct()
 					.filter { it != guildId }
 
