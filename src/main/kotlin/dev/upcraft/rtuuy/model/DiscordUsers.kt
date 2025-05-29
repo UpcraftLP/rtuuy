@@ -38,9 +38,9 @@ object DiscordUsers : SnowflakeIdTable("discord_users") {
 
 	init {
 		transaction {
-			SchemaUtils.create(DiscordUsers)
 			index(false, handle)
 			index(false, displayName)
+			SchemaUtils.create(DiscordUsers)
 		}
 	}
 }

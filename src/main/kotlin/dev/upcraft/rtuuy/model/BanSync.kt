@@ -31,7 +31,7 @@ object BanSyncGroups : UUIDTable("ban_sync_groups") {
 	}
 }
 
-object GuildsInBanSyncGroups : Table() {
+object GuildsInBanSyncGroups : Table("guilds_in_ban_sync_groups") {
 	val groupId =
 		reference("group_id", BanSyncGroups, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 	val guildId =
@@ -44,10 +44,9 @@ object GuildsInBanSyncGroups : Table() {
 
 	init {
 		transaction {
-			SchemaUtils.create(GuildsInBanSyncGroups)
-
 			index(false, guildId)
 			index(false, groupId)
+			SchemaUtils.create(GuildsInBanSyncGroups)
 		}
 	}
 }
@@ -60,6 +59,8 @@ object BanSyncTimes : SnowflakeIdTable("ban_sync_times", columnName = "guild_id"
 
 	init {
 		transaction {
+			foreignKey(BanSyncTimes.id to DiscordGuilds.id, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
+			index(false, lastSynced)
 			SchemaUtils.create(BanSyncTimes)
 		}
 	}

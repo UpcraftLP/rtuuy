@@ -37,9 +37,9 @@ object NonPingableUsersInGuilds : ULongIdTable("non_pingable_users_in_guilds") {
 
 	init {
 		transaction {
-			SchemaUtils.create(NonPingableUsersInGuilds)
 			uniqueIndex(guildId, userId)
 			index(false, guildId)
+			SchemaUtils.create(NonPingableUsersInGuilds)
 		}
 	}
 }
@@ -59,8 +59,8 @@ object NonPingableUsersInGuildsUserExceptions : Table() {
 
 	init {
 		transaction {
-			SchemaUtils.create(NonPingableUsersInGuildsUserExceptions)
 			uniqueIndex(parentId, userId)
+			SchemaUtils.create(NonPingableUsersInGuildsUserExceptions)
 		}
 	}
 }
@@ -76,9 +76,9 @@ object NonPingableUsersInGuildsUserExceptionsGlobal : ULongIdTable() {
 
 	init {
 		transaction {
-			SchemaUtils.create(NonPingableUsersInGuildsUserExceptionsGlobal)
 			uniqueIndex(guildId, userId)
 			index(false, guildId)
+			SchemaUtils.create(NonPingableUsersInGuildsUserExceptionsGlobal)
 		}
 	}
 }
@@ -97,8 +97,8 @@ object NonPingableUsersInGuildsRoleExceptions : ULongIdTable() {
 
 	init {
 		transaction {
-			SchemaUtils.create(NonPingableUsersInGuildsRoleExceptions)
 			uniqueIndex(parentId, roleId)
+			SchemaUtils.create(NonPingableUsersInGuildsRoleExceptions)
 		}
 	}
 }
@@ -113,9 +113,9 @@ object NonPingableUsersInGuildsRoleExceptionsGlobal : ULongIdTable() {
 
 	init {
 		transaction {
-			SchemaUtils.create(NonPingableUsersInGuildsRoleExceptionsGlobal)
 			uniqueIndex(guildId, roleId)
 			index(false, guildId)
+			SchemaUtils.create(NonPingableUsersInGuildsRoleExceptionsGlobal)
 		}
 	}
 }
