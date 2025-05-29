@@ -80,6 +80,7 @@ class BanSyncGroup(id: EntityID<UUID>) : UUIDEntity(id) {
 class BanSyncTime(id: EntityID<Snowflake>) : SnowflakeEntity(id) {
 	companion object : SnowflakeEntityClass<BanSyncTime>(BanSyncTimes)
 
+	var guild by DiscordGuild referencedOn BanSyncTimes.id
 	var lastSynced by BanSyncTimes.lastSynced
 }
 

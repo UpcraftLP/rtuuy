@@ -44,7 +44,7 @@ object NonPingableUsersInGuilds : ULongIdTable("non_pingable_users_in_guilds") {
 	}
 }
 
-object NonPingableUsersInGuildsUserExceptions : Table() {
+object NonPingableUsersInGuildsUserExceptions : Table("non_pingable_users_in_guilds_user_exceptions") {
 	val parentId = reference(
 		"parent_id",
 		NonPingableUsersInGuilds,
@@ -65,7 +65,7 @@ object NonPingableUsersInGuildsUserExceptions : Table() {
 	}
 }
 
-object NonPingableUsersInGuildsUserExceptionsGlobal : ULongIdTable() {
+object NonPingableUsersInGuildsUserExceptionsGlobal : ULongIdTable("non_pingable_users_in_guilds_user_exceptions_global") {
 	val guildId =
 		reference("guild_id", DiscordGuilds, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 	val userId =
@@ -83,7 +83,7 @@ object NonPingableUsersInGuildsUserExceptionsGlobal : ULongIdTable() {
 	}
 }
 
-object NonPingableUsersInGuildsRoleExceptions : ULongIdTable() {
+object NonPingableUsersInGuildsRoleExceptions : ULongIdTable("non_pingable_users_in_guilds_role_exceptions") {
 	val parentId = reference(
 		"parent_id",
 		NonPingableUsersInGuilds,
@@ -103,7 +103,7 @@ object NonPingableUsersInGuildsRoleExceptions : ULongIdTable() {
 	}
 }
 
-object NonPingableUsersInGuildsRoleExceptionsGlobal : ULongIdTable() {
+object NonPingableUsersInGuildsRoleExceptionsGlobal : ULongIdTable("non_pingable_users_in_guilds_role_exceptions_global") {
 	val guildId =
 		reference("guild_id", DiscordGuilds, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 	val roleId = ulong("role_id").transform(SnowflakeTransformer())
