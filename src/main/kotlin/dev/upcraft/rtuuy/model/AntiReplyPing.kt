@@ -220,9 +220,11 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 		newSuspendedTransaction(db = database) {
 			val dbGuild = discordUsers.getOrCreateGuild(guild)
 			val dbUser = discordUsers.getOrCreateUser(user.fetchUser(), guild)
-			NonPingableUsersInGuilds.upsert(where = {
-				(NonPingableUsersInGuilds.guildId eq dbGuild.id) and (NonPingableUsersInGuilds.userId eq dbUser.id)
-			}) {
+			NonPingableUsersInGuilds.upsert(
+				keys = arrayOf(NonPingableUsersInGuilds.guildId, NonPingableUsersInGuilds.userId),
+				where = { (NonPingableUsersInGuilds.guildId eq dbGuild.id) and (NonPingableUsersInGuilds.userId eq dbUser.id) },
+				onUpdateExclude = listOf(NonPingableUsersInGuilds.updatedAt)
+			) {
 				it[NonPingableUsersInGuilds.guildId] = dbGuild.id
 				it[NonPingableUsersInGuilds.userId] = dbUser.id
 				it[NonPingableUsersInGuilds.deleteOriginalMessages] = deleteOriginalMessages
@@ -234,7 +236,7 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 
 	suspend fun deleteNonPingableUser(guild: GuildBehavior, user: UserBehavior): Boolean = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			val deletedCount = NonPingableUsersInGuilds.deleteWhere(limit = 1) {
+			val deletedCount = NonPingableUsersInGuilds.deleteWhere {
 				(NonPingableUsersInGuilds.guildId eq guild.id) and (NonPingableUsersInGuilds.userId eq user.id)
 			}
 

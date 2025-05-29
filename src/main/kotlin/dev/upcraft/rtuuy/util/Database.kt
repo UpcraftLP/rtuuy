@@ -8,6 +8,7 @@ import dev.upcraft.rtuuy.model.AntiReplyPingRepository
 import dev.upcraft.rtuuy.model.BanSyncRepository
 import dev.upcraft.rtuuy.model.DiscordUserRepository
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 
@@ -18,10 +19,11 @@ object DatabaseFactory {
 			username = env("DATABASE_USERNAME")
 			password = env("DATABASE_PASSWORD")
 			maximumPoolSize = 6
-			transactionIsolation
 		}
 		val dataSource = HikariDataSource(config)
-		val db = Database.connect(dataSource)
+		val db = Database.connect(dataSource, databaseConfig = DatabaseConfig {
+			keepLoadedReferencesOutOfTransaction = true
+		})
 
 		// TODO flyway for DB migrations
 

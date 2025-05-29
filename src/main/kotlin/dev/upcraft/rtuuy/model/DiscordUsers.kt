@@ -39,11 +39,13 @@ object DiscordUsers : SnowflakeIdTable("discord_users") {
 	init {
 		transaction {
 			SchemaUtils.create(DiscordUsers)
+			index(false, handle)
+			index(false, displayName)
 		}
 	}
 }
 
-object DiscordUsersInGuilds : Table() {
+object DiscordUsersInGuilds : Table("discord_users_in_guilds") {
 	val discordUser = reference(
 		"discord_user_id",
 		DiscordUsers,
