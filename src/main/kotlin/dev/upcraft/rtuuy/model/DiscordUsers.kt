@@ -4,6 +4,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
+import dev.upcraft.rtuuy.util.ext.asUserMention
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -43,8 +44,18 @@ object DiscordUsers : SnowflakeIdTable("discord_users") {
 }
 
 object DiscordUsersInGuilds : Table() {
-	val discordUser = reference("discord_user_id", DiscordUsers, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
-	val guildId = reference("discord_guild_id", DiscordGuilds, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
+	val discordUser = reference(
+		"discord_user_id",
+		DiscordUsers,
+		onUpdate = ReferenceOption.CASCADE,
+		onDelete = ReferenceOption.CASCADE
+	)
+	val guildId = reference(
+		"discord_guild_id",
+		DiscordGuilds,
+		onUpdate = ReferenceOption.CASCADE,
+		onDelete = ReferenceOption.CASCADE
+	)
 
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 	val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
@@ -91,6 +102,10 @@ class DiscordUser(id: EntityID<Snowflake>) : SnowflakeEntity(id) {
 
 	var createdAt by DiscordUsers.createdAt
 	var updatedAt by DiscordUsers.updatedAt
+
+	fun mention(): String {
+		return id.value.asUserMention()
+	}
 
 	suspend fun update(block: suspend DiscordUser.() -> Unit) {
 		newSuspendedTransaction {
@@ -167,25 +182,27 @@ class DiscordUserRepository(private val database: Database) {
 		}
 	}
 
-	suspend fun getOrCreateGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild = withContext(Dispatchers.IO) {
-		newSuspendedTransaction(db = database) {
-			(DiscordGuild.findById(guild.id) ?: DiscordGuild.new(guild.id) {}).apply {
-				if (loadUsers) {
-					load(DiscordGuild::users)
+	suspend fun getOrCreateGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild =
+		withContext(Dispatchers.IO) {
+			newSuspendedTransaction(db = database) {
+				(DiscordGuild.findById(guild.id) ?: DiscordGuild.new(guild.id) {}).apply {
+					if (loadUsers) {
+						load(DiscordGuild::users)
+					}
 				}
 			}
 		}
-	}
 
-	suspend fun getGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild? = withContext(Dispatchers.IO) {
-		newSuspendedTransaction(db = database) {
-			DiscordGuild.findById(guild.id)?.apply {
-				if (loadUsers) {
-					load(DiscordGuild::users)
+	suspend fun getGuild(guild: GuildBehavior, loadUsers: Boolean = false): DiscordGuild? =
+		withContext(Dispatchers.IO) {
+			newSuspendedTransaction(db = database) {
+				DiscordGuild.findById(guild.id)?.apply {
+					if (loadUsers) {
+						load(DiscordGuild::users)
+					}
 				}
 			}
 		}
-	}
 
 	suspend fun deleteGuild(dbGuild: DiscordGuild) = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {

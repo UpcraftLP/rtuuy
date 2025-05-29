@@ -7,19 +7,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.jetbrains.exposed.dao.*
+import org.jetbrains.exposed.dao.UUIDEntity
+import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.ULongIdTable
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.dao.load
+import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.kotlin.datetime.CurrentTimestamp
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
-import kotlin.collections.flatMap
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 object BanSyncGroups : UUIDTable("ban_sync_groups") {
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
@@ -44,10 +43,25 @@ object GuildsInBanSyncGroups : Table() {
 	override val primaryKey = PrimaryKey(groupId, guildId)
 
 	init {
-		SchemaUtils.create(GuildsInBanSyncGroups)
+		transaction {
+			SchemaUtils.create(GuildsInBanSyncGroups)
 
-		index(false, guildId)
-		index(false, groupId)
+			index(false, guildId)
+			index(false, groupId)
+		}
+	}
+}
+
+/**
+ * tracks when bans TO a guild were last synced, from all other guilds that it is synced with
+ */
+object BanSyncTimes : SnowflakeIdTable("ban_sync_times", columnName = "guild_id") {
+	val lastSynced = timestamp("last_synced").default(Instant.DISTANT_PAST)
+
+	init {
+		transaction {
+			SchemaUtils.create(BanSyncTimes)
+		}
 	}
 }
 
@@ -60,13 +74,6 @@ class BanSyncGroup(id: EntityID<UUID>) : UUIDEntity(id) {
 	var updatedAt by BanSyncGroups.updatedAt
 
 	fun toDto(): BanSyncGroupDto = BanSyncGroupDto(guilds.toList(), createdAt, updatedAt)
-}
-
-/**
- * tracks when bans TO a guild were last synced, from all other guilds that it is synced with
- */
-object BanSyncTimes : SnowflakeIdTable("ban_sync_times", columnName = "guild_id") {
-	val lastSynced = timestamp("last_synced").default(Instant.DISTANT_PAST)
 }
 
 class BanSyncTime(id: EntityID<Snowflake>) : SnowflakeEntity(id) {

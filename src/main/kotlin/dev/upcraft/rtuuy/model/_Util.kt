@@ -19,7 +19,8 @@ class SnowflakeTransformer : ColumnTransformer<ULong, Snowflake> {
 }
 
 open class SnowflakeIdTable(name: String = "", columnName: String = "id") : IdTable<Snowflake>(name) {
-	final override val id: Column<EntityID<Snowflake>> = ulong(columnName).autoIncrement().transform(SnowflakeTransformer()).entityId()
+	final override val id: Column<EntityID<Snowflake>> =
+		ulong(columnName).autoIncrement().transform(SnowflakeTransformer()).entityId()
 	final override val primaryKey = PrimaryKey(id)
 }
 

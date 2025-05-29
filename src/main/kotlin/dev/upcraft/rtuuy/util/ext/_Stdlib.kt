@@ -3,7 +3,7 @@ package dev.upcraft.rtuuy.util.ext
 import kotlinx.datetime.Instant
 
 inline fun <T : Any> T?.ifNull(block: () -> Unit): T? {
-	if(this == null) {
+	if (this == null) {
 		block()
 	}
 	return this

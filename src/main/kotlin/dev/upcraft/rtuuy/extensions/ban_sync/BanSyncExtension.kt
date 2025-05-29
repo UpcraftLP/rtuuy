@@ -139,12 +139,14 @@ class BanSyncExtension : Extension() {
 			} catch (e: RestRequestException) {
 				logger.error(e) { "Failed to sync ban for user ${ban.userId} to guild ${this.id}" }
 				posthog {
-					captureException(e, null, mapOf(
-						"user_id" to ban.userId,
-						"guild_id" to this@syncBan.id,
-						"ban_reason" to ban.reason,
-						"ban_timestamp" to ban.timestamp
-					))
+					captureException(
+						e, null, mapOf(
+							"user_id" to ban.userId,
+							"guild_id" to this@syncBan.id,
+							"ban_reason" to ban.reason,
+							"ban_timestamp" to ban.timestamp
+						)
+					)
 				}
 			}
 		} else {
