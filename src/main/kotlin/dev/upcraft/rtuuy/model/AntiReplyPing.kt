@@ -3,10 +3,11 @@ package dev.upcraft.rtuuy.model
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.UserBehavior
-import dev.upcraft.rtuuy.model.dto.AntiReplyPingGlobalExclusions
-import dev.upcraft.rtuuy.model.dto.NonPingableUserWithExclusions
+import dev.upcraft.rtuuy.model.dto.anti_reply_ping.AntiReplyPingGlobalExclusionsDto
+import dev.upcraft.rtuuy.model.dto.anti_reply_ping.NonPingableUserWithExclusionsDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.dao.ULongEntity
 import org.jetbrains.exposed.dao.ULongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -19,6 +20,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.duration
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 object NonPingableUsersInGuilds : ULongIdTable("non_pingable_users_in_guilds") {
@@ -28,7 +30,7 @@ object NonPingableUsersInGuilds : ULongIdTable("non_pingable_users_in_guilds") {
 		reference("user_id", DiscordUsers, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 
 	val mutePeriod = duration("mute_period").default(1.minutes).nullable()
-	val deleteOriginalMessage = bool("delete_original_message").default(false)
+	val deleteOriginalMessages = bool("delete_original_messages").default(false)
 
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 	val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
@@ -125,7 +127,7 @@ class NonPingableUserInGuild(id: EntityID<ULong>) : ULongEntity(id) {
 	var user by DiscordUser referencedOn NonPingableUsersInGuilds.userId
 
 	var mutePeriod by NonPingableUsersInGuilds.mutePeriod
-	var deleteOriginalMessage by NonPingableUsersInGuilds.deleteOriginalMessage
+	var deleteOriginalMessage by NonPingableUsersInGuilds.deleteOriginalMessages
 
 	var userExceptions by DiscordUser via NonPingableUsersInGuildsUserExceptions
 	val roleExceptions by NonPingableUsersInGuildsRoleException referrersOn NonPingableUsersInGuildsRoleExceptions.parentId
@@ -175,7 +177,7 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 		}
 	}
 
-	suspend fun getNonPingableUser(guild: GuildBehavior, user: UserBehavior): NonPingableUserWithExclusions? =
+	suspend fun getNonPingableUser(guild: GuildBehavior, user: UserBehavior): NonPingableUserWithExclusionsDto? =
 		withContext(Dispatchers.IO) {
 			newSuspendedTransaction(db = database) {
 				val found =
@@ -198,7 +200,7 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 					.map { it[NonPingableUsersInGuildsRoleExceptionsGlobal.roleId] }
 					.toCollection(excludedRoles)
 
-				return@newSuspendedTransaction NonPingableUserWithExclusions(
+				return@newSuspendedTransaction NonPingableUserWithExclusionsDto(
 					found.user,
 					found.guild,
 					found.mutePeriod,
@@ -209,26 +211,24 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 			}
 		}
 
-	suspend fun createNonPingableUser(guild: GuildBehavior, user: UserBehavior): Boolean = withContext(Dispatchers.IO) {
+	suspend fun createOrUpdateNonPingableUser(
+		guild: GuildBehavior,
+		user: UserBehavior,
+		deleteOriginalMessages: Boolean,
+		mutePeriod: Duration? = null
+	) = withContext(Dispatchers.IO) {
 		newSuspendedTransaction(db = database) {
-			val existingConfig =
-				NonPingableUserInGuild.find { (NonPingableUsersInGuilds.guildId eq guild.id) and (NonPingableUsersInGuilds.userId eq user.id) }
-					.with(NonPingableUserInGuild::userExceptions, NonPingableUserInGuild::roleExceptions)
-					.firstOrNull()
-
-			if (existingConfig != null) {
-				return@newSuspendedTransaction false
-			}
-
 			val dbGuild = discordUsers.getOrCreateGuild(guild)
 			val dbUser = discordUsers.getOrCreateUser(user.fetchUser(), guild)
-
-			NonPingableUserInGuild.new {
-				this.user = dbUser
-				this.guild = dbGuild
+			NonPingableUsersInGuilds.upsert(where = {
+				(NonPingableUsersInGuilds.guildId eq dbGuild.id) and (NonPingableUsersInGuilds.userId eq dbUser.id)
+			}) {
+				it[NonPingableUsersInGuilds.guildId] = dbGuild.id
+				it[NonPingableUsersInGuilds.userId] = dbUser.id
+				it[NonPingableUsersInGuilds.deleteOriginalMessages] = deleteOriginalMessages
+				it[NonPingableUsersInGuilds.mutePeriod] = mutePeriod
+				it[NonPingableUsersInGuilds.updatedAt] = Clock.System.now()
 			}
-
-			return@newSuspendedTransaction true
 		}
 	}
 
@@ -238,7 +238,7 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 				(NonPingableUsersInGuilds.guildId eq guild.id) and (NonPingableUsersInGuilds.userId eq user.id)
 			}
 
-			return@newSuspendedTransaction deletedCount > 0
+			deletedCount > 0
 		}
 	}
 
@@ -272,24 +272,25 @@ class AntiReplyPingRepository(private val database: Database, private val discor
 			}
 		}
 
-	suspend fun listGuildExclusions(guild: GuildBehavior): AntiReplyPingGlobalExclusions = withContext(Dispatchers.IO) {
-		newSuspendedTransaction(db = database) {
-			val excludedUsers =
-				NonPingableUsersInGuildsUserExceptionGlobal.find { NonPingableUsersInGuildsUserExceptionsGlobal.guildId eq guild.id }
-					.with(NonPingableUsersInGuildsUserExceptionGlobal::user)
-					.map { it.user }
-					.toList()
+	suspend fun listGuildExclusions(guild: GuildBehavior): AntiReplyPingGlobalExclusionsDto =
+		withContext(Dispatchers.IO) {
+			newSuspendedTransaction(db = database) {
+				val excludedUsers =
+					NonPingableUsersInGuildsUserExceptionGlobal.find { NonPingableUsersInGuildsUserExceptionsGlobal.guildId eq guild.id }
+						.with(NonPingableUsersInGuildsUserExceptionGlobal::user)
+						.map { it.user }
+						.toList()
 
-			val excludedRoles =
-				NonPingableUsersInGuildsRoleExceptionGlobal.find { NonPingableUsersInGuildsRoleExceptionsGlobal.guildId eq guild.id }
-					.map { it.roleId }
-					.toList()
+				val excludedRoles =
+					NonPingableUsersInGuildsRoleExceptionGlobal.find { NonPingableUsersInGuildsRoleExceptionsGlobal.guildId eq guild.id }
+						.map { it.roleId }
+						.toList()
 
-			AntiReplyPingGlobalExclusions(
-				guild.id,
-				excludedUsers,
-				excludedRoles
-			)
+				AntiReplyPingGlobalExclusionsDto(
+					guild.id,
+					excludedUsers,
+					excludedRoles
+				)
+			}
 		}
-	}
 }

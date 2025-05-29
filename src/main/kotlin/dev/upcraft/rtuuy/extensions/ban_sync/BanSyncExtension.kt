@@ -122,6 +122,44 @@ class BanSyncExtension : Extension() {
 				}
 			}
 		}
+
+//		ephemeralSlashCommand {
+//			name = "create_sync_group".toKey()
+//			description = "Create a new sync group".toKey()
+//			defaultMemberPermissions = Permissions(Permission.ManageGuild)
+//
+//			check {
+//				anyGuild()
+//			}
+//
+//			action {
+//				val guild = guildFor(event)!!
+//				val syncGroup = syncedBans.createSyncGroup(guild)
+//
+//				respond {
+//					content = "Created sync group with ID ${syncGroup.id}"
+//				}
+//			}
+//		}
+//
+//		ephemeralSlashCommand {
+//			name = "add_to_sync_group".toKey()
+//			description = "Add this guild to an existing sync group".toKey()
+//			arguments
+//
+//			check {
+//				anyGuild()
+//			}
+//
+//			action {
+//				val guild = guildFor(event)!!
+//				val syncGroup = syncedBans.createSyncGroup(guild)
+//
+//				respond {
+//					content = "Created sync group with ID ${syncGroup.id}"
+//				}
+//			}
+//		}
 	}
 
 	private suspend fun Guild.syncBan(ban: BanEntry, skipCheck: Boolean = false) {

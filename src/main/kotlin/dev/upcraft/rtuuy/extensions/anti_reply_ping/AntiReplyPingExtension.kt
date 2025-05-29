@@ -12,6 +12,8 @@ import dev.kordex.core.checks.anyGuild
 import dev.kordex.core.checks.isNotBot
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
+import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.optionalDuration
 import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
@@ -21,6 +23,7 @@ import dev.kordex.core.i18n.withContext
 import dev.kordex.core.utils.any
 import dev.kordex.core.utils.repliedMessageOrNull
 import dev.kordex.core.utils.timeoutUntil
+import dev.kordex.core.utils.toDuration
 import dev.upcraft.rtuuy.i18n.Translations
 import dev.upcraft.rtuuy.model.AntiReplyPingRepository
 import dev.upcraft.rtuuy.util.analytics.posthog
@@ -31,6 +34,7 @@ import dev.upcraft.rtuuy.util.ext.ifNull
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
 import org.koin.core.component.inject
 
 val logger = KotlinLogging.logger {}
@@ -122,28 +126,33 @@ class AntiReplyPingExtension : Extension() {
 					name = Translations.Arguments.AntiReplyPing.User.name
 					description = Translations.Arguments.AntiReplyPing.User.description
 				}
+				val deleteOriginalMessages by optionalBoolean {
+					name = Translations.Arguments.AntiReplyPing.DeleteOriginalMessage.name
+					description = Translations.Arguments.AntiReplyPing.DeleteOriginalMessage.description
+				}
+				val timeoutDuration by optionalDuration {
+					name = Translations.Arguments.AntiReplyPing.TimeoutDuration.name
+					description = Translations.Arguments.AntiReplyPing.TimeoutDuration.description
+				}
 			}
 			ephemeralSubCommand(::AntiReplyPingAddArgs) {
 				name = Translations.Commands.AntiReplyPing.Add.name
 				description = Translations.Commands.AntiReplyPing.Add.description
 
 				action {
-					if (antiReplyPingRepository.createNonPingableUser(guild!!, arguments.user)) {
-						respond {
-							content = Translations.Commands.AntiReplyPing.Add.Response.success
-								.withContext(this@action)
-								.translateNamed(
-									"user" to arguments.user.mention
-								)
-						}
-					} else {
-						respond {
-							content = Translations.Commands.AntiReplyPing.Add.Response.alreadyAdded
-								.withContext(this@action)
-								.translateNamed(
-									"user" to arguments.user.mention
-								)
-						}
+					antiReplyPingRepository.createOrUpdateNonPingableUser(
+						guild!!,
+						arguments.user,
+						arguments.deleteOriginalMessages ?: true,
+						arguments.timeoutDuration?.toDuration(TimeZone.UTC)
+					)
+
+					respond {
+						content = Translations.Commands.AntiReplyPing.Add.Response.success
+							.withContext(this@action)
+							.translateNamed(
+								"user" to arguments.user.mention
+							)
 					}
 				}
 			}
@@ -189,6 +198,7 @@ class AntiReplyPingExtension : Extension() {
 				action {
 					val nonReplyPings = antiReplyPingRepository.getNonPingableUsers(guild!!)
 
+					// TODO list individual exclusions where applicable
 					val list = buildList {
 						if (nonReplyPings.isNotEmpty()) {
 							nonReplyPings.map { it.user.mention() }.chunked(15).forEach { add(it.joinToString("\n")) }

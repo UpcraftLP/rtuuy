@@ -2,7 +2,7 @@ package dev.upcraft.rtuuy.model
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
-import dev.upcraft.rtuuy.model.dto.BanSyncGroupDto
+import dev.upcraft.rtuuy.model.dto.ban_sync.BanSyncGroupDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock

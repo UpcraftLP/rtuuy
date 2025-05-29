@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import dev.kordex.core.utils.env
 import dev.kordex.core.utils.loadModule
+import dev.upcraft.rtuuy.model.AntiReplyPingRepository
 import dev.upcraft.rtuuy.model.BanSyncRepository
 import dev.upcraft.rtuuy.model.DiscordUserRepository
 import org.jetbrains.exposed.sql.Database
@@ -32,5 +33,6 @@ fun registerDataRepositories() {
 	loadModule {
 		singleOf(::DiscordUserRepository) { bind() }
 		singleOf(::BanSyncRepository) { bind() }
+		singleOf(::AntiReplyPingRepository) { bind() }
 	}
 }

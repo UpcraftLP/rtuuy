@@ -10,6 +10,9 @@ if (environment == "dev") {
 	defaultLevel = DEBUG
 	defaultTarget = ConsoleTarget.SystemOut
 
+	// log DB queries
+	logger("Exposed", DEBUG)
+
 	// Silence warning about missing native PRNG
 	logger("io.ktor.util.random", ERROR)
 }
