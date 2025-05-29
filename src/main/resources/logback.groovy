@@ -1,5 +1,4 @@
 import ch.qos.logback.core.joran.spi.ConsoleTarget
-import ch.qos.logback.core.ConsoleAppender
 
 def environment = System.getenv("ENVIRONMENT") ?: "production"
 
@@ -17,7 +16,9 @@ if (environment == "dev") {
 	logger("io.ktor.util.random", ERROR)
 }
 
-appender("CONSOLE", ConsoleAppender) {
+// using FQCN here because IDEA is stupid and keeps removing the import
+//noinspection UnnecessaryQualifiedReference
+appender("CONSOLE", ch.qos.logback.core.ConsoleAppender) {
 	encoder(PatternLayoutEncoder) {
 		pattern = "%boldGreen(%d{yyyy-MM-dd}) %boldYellow(%d{HH:mm:ss}) %gray(|) %highlight(%5level) %gray(|) %boldMagenta(%40.40logger{40}) %gray(|) %msg%n"
 
