@@ -15,7 +15,7 @@ ktor = { strictly = "3.0.3" } # pin the same version as kord, or else things bre
 posthog = "0.1.6"
 exposed = "0.61.0"
 hikari = "6.3.0"
-postgresql = "42.7.5"
+postgresql = "42.7.6"
 
 [libraries]
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
