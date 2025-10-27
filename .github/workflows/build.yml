@@ -79,7 +79,7 @@ jobs:
           flavor: latest=true
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: ${{ env.REPOSITORY_NAME }}-${{ env.COMMIT_SHA_SHORT }}
           path: build/install/rtuuy
