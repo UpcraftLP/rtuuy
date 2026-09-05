@@ -1,7 +1,7 @@
 # escape=\
 # syntax=docker/dockerfile:1
 
-ARG JAVA_VERSION=21
+ARG JAVA_VERSION=25
 FROM --platform=$BUILDPLATFORM eclipse-temurin:${JAVA_VERSION}-jdk-alpine
 
 # needed for the healthcheck json parsing

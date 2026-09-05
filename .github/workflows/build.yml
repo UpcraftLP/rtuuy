@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  JAVA_VERSION: 21
+  JAVA_VERSION: 25
   PLATFORMS: linux/amd64,linux/arm64/v8
 
 jobs:

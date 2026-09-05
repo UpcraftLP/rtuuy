@@ -10,7 +10,7 @@ plugins {
 	alias(libs.plugins.kordex.plugin)
 }
 
-val javaVersion = 21
+val javaVersion = 25
 
 group = "dev.upcraft"
 version = System.getenv("VERSION") ?: "1.0.0-SNAPSHOT"
