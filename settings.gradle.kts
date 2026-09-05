@@ -13,3 +13,10 @@ plugins {
 }
 
 rootProject.name = "rtuuy"
+
+includeBuild("build-logic")
+
+listOf("shared-model", "discord", "web").forEach {
+	include(it)
+	project(":$it").name = "${rootProject.name}-$it"
+}

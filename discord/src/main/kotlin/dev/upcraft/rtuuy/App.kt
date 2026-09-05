@@ -42,6 +42,10 @@ suspend fun main() {
 	val bot = ExtensibleBot(TOKEN) {
 		botVersion = App.COMMIT_SHA ?: App.VERSION
 
+		chatCommands {
+			enabled = true
+		}
+
 		applicationCommands {
 			defaultGuild(TEST_SERVER_ID)
 		}

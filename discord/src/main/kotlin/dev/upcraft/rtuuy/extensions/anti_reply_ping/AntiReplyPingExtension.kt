@@ -37,7 +37,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import org.koin.core.component.inject
 
-val logger = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 class AntiReplyPingExtension : Extension() {
 	override val name = "anti_reply_ping"

@@ -150,7 +150,9 @@ class DiscordUserRepository(private val database: Database) {
 				}
 
 				if (!guilds.contains(guildEntity)) {
-					guilds = SizedCollection(guilds.plus(guildEntity))
+					update {
+						guilds = SizedCollection(guilds.plus(guildEntity))
+					}
 				}
 			} ?: DiscordUser.new(user.id) {
 				handle = user.username
